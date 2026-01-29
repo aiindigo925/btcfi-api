@@ -8,8 +8,8 @@ const MEMPOOL_API = 'https://mempool.space/api';
 export interface MempoolSummary {
   count: number;
   vsize: number;
-  totalFee: number;
-  feeHistogram: [number, number][];
+  total_fee: number;
+  fee_histogram: [number, number][];
 }
 
 export interface RecommendedFees {
