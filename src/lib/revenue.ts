@@ -18,7 +18,8 @@ async function getKV(): Promise<any> {
   if (kvAvailable === false) return null;
   if (kvModule) return kvModule;
   try {
-    kvModule = await import('@vercel/kv' as string);
+    const { Redis } = await import('@upstash/redis' as string);
+    kvModule = Redis.fromEnv();
     kvAvailable = true;
     return kvModule;
   } catch {

@@ -88,9 +88,9 @@ export async function maybeEncryptResponse(
 
   return {
     body: {
-      encrypted: true,
-      algorithm: 'x25519-xsalsa20-poly1305',
       ...result,
+      isEncrypted: true,
+      algorithm: 'x25519-xsalsa20-poly1305',
       decryptionGuide: {
         step1: 'Decode encrypted, nonce, and ephemeralPublicKey from base64',
         step2: 'Use nacl.box.open(encrypted, nonce, ephemeralPublicKey, yourSecretKey)',
