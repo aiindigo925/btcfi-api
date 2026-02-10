@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecommendedFees, getFeeHistogram, getBtcPrice } from '@/lib/bitcoin';
-
+import { getRecommendedFees, getMempoolBlocks, getBtcPrice } from '@/lib/bitcoin';
 export async function GET(request: NextRequest) {
   try {
-    const [fees, blocks, price] = await Promise.all([
+    const [fees, mempoolBlocks, price] = await Promise.all([
       getRecommendedFees(),
-      getFeeHistogram(),
+      getMempoolBlocks(),
       getBtcPrice(),
     ]);
 
-    // Calculate USD cost for a typical 250 vbyte transaction
-    const satPerByte = fees.fastestFee;
     const typicalTxSize = 250;
-    const satCost = satPerByte * typicalTxSize;
-    const btcCost = satCost / 100_000_000;
-    const usdCost = btcCost * price.USD;
 
     return NextResponse.json({
       success: true,
@@ -40,7 +34,7 @@ export async function GET(request: NextRequest) {
           usd: (fees.hourFee * typicalTxSize / 100_000_000 * price.USD).toFixed(2),
         },
       },
-      nextBlocks: blocks.slice(0, 3),
+      nextBlocks: mempoolBlocks.slice(0, 3),
       price: {
         btcUsd: price.USD,
         btcEur: price.EUR,
@@ -50,9 +44,9 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch fee data' },
+      { success: false, error: 'Failed to fetch fee data', code: 'FETCH_FAILED' },
       { status: 500 }
     );
   }

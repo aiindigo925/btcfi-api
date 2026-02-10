@@ -1,238 +1,298 @@
 /**
- * x402 Payment Middleware for BTCFi API
- * 
- * Enables pay-per-query micropayments for AI agents.
- * No API keys. No subscriptions. Payment IS authentication.
+ * x402 Payment Configuration — MP2 Phase 12
+ *
+ * Official @x402/next SDK for Base (Coinbase facilitator, fee-free ERC-3009)
+ * Custom NLx402 verification for Solana (PCEF nonprofit, zero fees)
+ *
+ * Payment is now handled at middleware level — routes don't call withPayment() anymore.
+ * This file exports pricing config, verification helpers, and status.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-// Configuration
-const PRICE_PER_QUERY = 0.01; // $0.01 USDC
-const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
-const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || ''; // Set in env
-const NETWORK = process.env.X402_NETWORK || 'base'; // 'base' or 'base-sepolia'
-const USDC_ADDRESS = process.env.USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base mainnet USDC
+// ============ PRICING CONFIG ============
 
-// x402 is currently OPTIONAL - endpoints work without payment for now
-// This will be enabled once we have treasury wallet set up
+export const PRICING: Record<string, number> = {
+  default: 0.01,        // $0.01 USDC — standard queries
+  broadcast: 0.05,      // $0.05 USDC — tx broadcast (write op)
+  intelligence: 0.02,   // $0.02 USDC — smart analysis
+  solv: 0.02,           // $0.02 USDC — Solv Protocol data
+  security: 0.02,       // $0.02 USDC — threat analysis
+  zk: 0.03,             // $0.03 USDC — ZK proof generation
+};
+
+/**
+ * Route-level pricing map for middleware.
+ * Key: path pattern → price in USDC cents.
+ */
+export const ROUTE_PRICING: Record<string, number> = {
+  // Core ($0.01)
+  '/api/v1/fees': 0.01,
+  '/api/v1/mempool': 0.01,
+  '/api/v1/address': 0.01,
+  '/api/v1/tx': 0.01,
+  '/api/v1/block': 0.01,
+  // Intelligence ($0.02)
+  '/api/v1/intelligence': 0.02,
+  // Security ($0.02)
+  '/api/v1/security': 0.02,
+  // Solv Protocol ($0.02)
+  '/api/v1/solv': 0.02,
+  // Broadcast ($0.05)
+  '/api/v1/tx/broadcast': 0.05,
+  // Free
+  '/api/v1/staking': 0,
+  '/api/v1': 0, // index
+  '/api/v1/payment-test': 0, // dev-only, returns 404 in production
+  '/api/health': 0,
+  // ZK Proofs ($0.03 generate, $0.01 verify)
+  '/api/v1/zk/verify': 0.01,
+  '/api/v1/zk': 0.03,
+  // Streams ($0.01)
+  '/api/v1/stream': 0.01,
+};
+
+/**
+ * Get price for a given API path
+ */
+export function getPriceForPath(pathname: string): number {
+  // Exact match first
+  if (ROUTE_PRICING[pathname] !== undefined) return ROUTE_PRICING[pathname];
+  // Broadcast special case (must check before generic /tx)
+  if (pathname.includes('/broadcast')) return PRICING.broadcast;
+  // Prefix match
+  for (const [prefix, price] of Object.entries(ROUTE_PRICING)) {
+    if (pathname.startsWith(prefix) && price > 0) return price;
+  }
+  return PRICING.default;
+}
+
+// ============ FACILITATOR CONFIG ============
+
+export const FACILITATORS = {
+  base: {
+    url: process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator',
+    network: 'base' as const,
+    asset: 'USDC',
+    assetAddress: process.env.USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    payTo: process.env.TREASURY_ADDRESS_BASE || '0xA6Bba2453673196ae22fb249C7eA9FA118a87150',
+    fees: 'zero (Coinbase ERC-3009)',
+    provider: 'Coinbase x402 Facilitator',
+  },
+  solana: {
+    url: process.env.NLX402_URL || 'https://thrt.ai/nlx402',
+    network: 'solana' as const,
+    asset: 'USDC',
+    assetAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    payTo: process.env.TREASURY_ADDRESS_SOLANA || '8f2LTSW8ffDHE1UgkkUjJXpuXpvSq8gGXtWVrGX2uRqQ',
+    fees: 'zero (nonprofit)',
+    provider: 'NLx402 (PCEF 501c3)',
+  },
+};
+
 const X402_ENABLED = process.env.X402_ENABLED === 'true';
+const DEFAULT_NETWORK = process.env.X402_NETWORK || 'base';
 
-export interface PaymentRequirements {
-  scheme: string;
-  network: string;
-  maxAmountRequired: string;
-  resource: string;
-  description: string;
-  mimeType: string;
-  payTo: string;
-  maxTimeoutSeconds: number;
-  asset: string;
-  extra?: Record<string, unknown>;
+// ============ NETWORK DETECTION ============
+
+export function detectNetwork(request: NextRequest): string {
+  const header = request.headers.get('X-Payment-Network')
+    || request.headers.get('x-payment-network');
+  if (header && (header === 'base' || header === 'solana')) return header;
+  return DEFAULT_NETWORK;
 }
 
-export interface PaymentHeader {
-  x402Version: string;
-  network: string;
-  scheme: string;
-  payload: string;
-}
+// ============ 402 RESPONSE (V2 SPEC — HEADERS) ============
 
-/**
- * Convert USD price to USDC base units (6 decimals)
- */
-function usdToBaseUnits(usd: number): string {
-  return Math.floor(usd * 1_000_000).toString();
-}
+export function create402Response(pathname: string, network: string): NextResponse {
+  const price = getPriceForPath(pathname);
+  const facilitator = FACILITATORS[network as keyof typeof FACILITATORS] || FACILITATORS.base;
+  const altNetwork = network === 'base' ? 'solana' : 'base';
+  const altFacilitator = FACILITATORS[altNetwork as keyof typeof FACILITATORS];
 
-/**
- * Create payment requirements for a resource
- */
-export function createPaymentRequirements(
-  resource: string,
-  description: string = 'BTCFi API Query'
-): PaymentRequirements {
-  return {
-    scheme: 'exact',
-    network: NETWORK,
-    maxAmountRequired: usdToBaseUnits(PRICE_PER_QUERY),
-    resource,
-    description,
-    mimeType: 'application/json',
-    payTo: TREASURY_ADDRESS,
-    maxTimeoutSeconds: 300,
-    asset: USDC_ADDRESS,
-  };
-}
+  const amountBaseUnits = Math.floor(price * 1_000_000).toString();
 
-/**
- * Create 402 Payment Required response
- */
-export function create402Response(
-  paymentRequirements: PaymentRequirements
-): NextResponse {
   return NextResponse.json(
     {
       error: 'Payment Required',
       code: 402,
-      message: `This endpoint requires payment of $${PRICE_PER_QUERY} USDC`,
-      paymentRequirements,
-      howToPay: {
-        step1: 'Decode the paymentRequirements object',
-        step2: `Send ${PRICE_PER_QUERY} USDC to ${TREASURY_ADDRESS} on ${NETWORK}`,
-        step3: 'Include payment proof in X-Payment header',
-        step4: 'Retry the request',
+      message: `This endpoint requires $${price} USDC`,
+      paymentRequirements: {
+        scheme: 'exact',
+        network: facilitator.network,
+        maxAmountRequired: amountBaseUnits,
+        resource: pathname,
+        payTo: facilitator.payTo,
+        asset: facilitator.assetAddress,
+        facilitator: facilitator.url,
+        maxTimeoutSeconds: 300,
       },
+      alternatePayment: {
+        network: altFacilitator.network,
+        maxAmountRequired: amountBaseUnits,
+        payTo: altFacilitator.payTo,
+        asset: altFacilitator.assetAddress,
+        facilitator: altFacilitator.url,
+      },
+      networks: {
+        base: { provider: FACILITATORS.base.provider, fees: FACILITATORS.base.fees },
+        solana: { provider: FACILITATORS.solana.provider, fees: FACILITATORS.solana.fees },
+      },
+      pricing: PRICING,
     },
     {
       status: 402,
       headers: {
         'X-Payment-Required': 'true',
-        'X-Payment-Amount': PRICE_PER_QUERY.toString(),
+        'X-Payment-Amount': price.toString(),
         'X-Payment-Currency': 'USDC',
-        'X-Payment-Network': NETWORK,
+        'X-Payment-Networks': 'base,solana',
       },
     }
   );
 }
 
-/**
- * Extract payment header from request
- */
-export function extractPaymentHeader(request: NextRequest): string | null {
-  return request.headers.get('X-Payment') || request.headers.get('x-payment');
-}
+// ============ PAYMENT VERIFICATION ============
 
-/**
- * Verify payment (simplified - will integrate with facilitator)
- * 
- * In production, this calls the x402 facilitator to verify the payment proof
- */
 export async function verifyPayment(
   paymentHeader: string,
-  requirements: PaymentRequirements
-): Promise<{ valid: boolean; reason?: string }> {
-  if (!paymentHeader) {
-    return { valid: false, reason: 'missing_payment_header' };
+  pathname: string,
+  network: string
+): Promise<{ valid: boolean; reason?: string; network?: string }> {
+  if (!paymentHeader) return { valid: false, reason: 'missing_payment_header' };
+
+  const price = getPriceForPath(pathname);
+  const facilitator = FACILITATORS[network as keyof typeof FACILITATORS] || FACILITATORS.base;
+  const amountBaseUnits = Math.floor(price * 1_000_000).toString();
+
+  // Dev mode: accept any well-formed payment
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      JSON.parse(Buffer.from(paymentHeader, 'base64').toString('utf8'));
+      return { valid: true, network };
+    } catch {
+      return { valid: false, reason: 'invalid_base64_json' };
+    }
   }
 
+  const requirements = {
+    scheme: 'exact',
+    network: facilitator.network,
+    maxAmountRequired: amountBaseUnits,
+    resource: pathname,
+    payTo: facilitator.payTo,
+    asset: facilitator.assetAddress,
+    facilitator: facilitator.url,
+    maxTimeoutSeconds: 300,
+    mimeType: 'application/json',
+    description: 'BTCFi API Query',
+  };
+
   try {
-    // Decode payment header
-    const decoded = JSON.parse(
-      Buffer.from(paymentHeader, 'base64').toString('utf8')
-    ) as PaymentHeader;
-
-    // Basic validation
-    if (!decoded.payload || !decoded.network) {
-      return { valid: false, reason: 'invalid_payment_format' };
-    }
-
-    // Check network matches
-    if (decoded.network !== requirements.network) {
-      return { valid: false, reason: 'network_mismatch' };
-    }
-
-    // TODO: Call facilitator to verify actual payment
-    // For now, accept any well-formed payment header
-    // This is for development - production will verify on-chain
-    
-    console.log('[x402] Payment header received, verification pending facilitator integration');
-    
-    // Temporary: Accept all payments during development
-    if (process.env.NODE_ENV === 'development') {
-      return { valid: true };
-    }
-
-    // In production, verify with facilitator
-    const verifyResponse = await fetch(`${FACILITATOR_URL}/verify`, {
+    const response = await fetch(`${facilitator.url}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         paymentHeader,
         paymentRequirements: requirements,
+        ...(network === 'solana' ? {
+          expectedPayTo: facilitator.payTo,
+          expectedAsset: facilitator.assetAddress,
+        } : {}),
       }),
     });
-
-    if (!verifyResponse.ok) {
-      return { valid: false, reason: 'facilitator_verification_failed' };
-    }
-
-    const result = await verifyResponse.json();
-    return { valid: result.isValid, reason: result.invalidReason };
-
+    if (!response.ok) return { valid: false, reason: `${network}_facilitator_error`, network };
+    const result = await response.json();
+    return {
+      valid: result.isValid || result.valid || false,
+      reason: result.invalidReason || result.reason,
+      network,
+    };
   } catch (error) {
-    console.error('[x402] Payment verification error:', error);
-    return { valid: false, reason: 'verification_error' };
+    console.error(`[x402:${network}] Verification error:`, error);
+    return { valid: false, reason: `${network}_facilitator_unreachable`, network };
   }
 }
 
+// ============ MIDDLEWARE HELPER ============
+
 /**
- * x402 middleware for API routes
- * 
- * Usage in route:
- * ```
- * import { withPayment } from '@/lib/x402';
- * 
- * export async function GET(request: NextRequest) {
- *   const paymentResult = await withPayment(request, '/api/v1/fees');
- *   if (paymentResult) return paymentResult; // Returns 402 if payment needed
- *   
- *   // ... handle request
- * }
- * ```
+ * Check payment for a request. Called from middleware.ts.
+ * Returns null if payment OK (or payments disabled), NextResponse if 402/error.
  */
-export async function withPayment(
-  request: NextRequest,
-  resource: string,
-  description?: string
-): Promise<NextResponse | null> {
-  // Skip payment if disabled
-  if (!X402_ENABLED) {
-    return null; // Continue to handler
-  }
+export async function checkPayment(request: NextRequest): Promise<NextResponse | null> {
+  if (!X402_ENABLED) return null;
 
-  // Skip payment if no treasury configured
-  if (!TREASURY_ADDRESS) {
-    console.warn('[x402] Treasury address not configured, skipping payment');
-    return null;
-  }
+  const pathname = request.nextUrl.pathname;
+  const price = getPriceForPath(pathname);
 
-  const paymentHeader = extractPaymentHeader(request);
-  const requirements = createPaymentRequirements(resource, description);
+  // Free endpoints
+  if (price === 0) return null;
 
-  // No payment header - return 402
+  const network = detectNetwork(request);
+  const paymentHeader = request.headers.get('X-Payment') || request.headers.get('x-payment');
+
+  // No payment → 402
   if (!paymentHeader) {
-    return create402Response(requirements);
+    return create402Response(pathname, network);
   }
 
   // Verify payment
-  const verification = await verifyPayment(paymentHeader, requirements);
-
-  if (!verification.valid) {
+  const result = await verifyPayment(paymentHeader, pathname, network);
+  if (!result.valid) {
     return NextResponse.json(
       {
         error: 'Payment Invalid',
         code: 402,
-        reason: verification.reason,
-        message: 'Payment verification failed. Please try again.',
+        reason: result.reason,
+        network: result.network,
+        message: 'Payment verification failed. Please retry.',
       },
       { status: 402 }
     );
   }
 
-  // Payment valid - continue to handler
-  return null;
+  return null; // Payment valid — proceed
 }
 
+// ============ LEGACY COMPAT ============
+
 /**
- * Get x402 configuration status
+ * Legacy withPayment() — redirects to middleware-based payment check.
+ * Kept for any routes that still call it directly during migration.
+ * @deprecated Use middleware-level payment instead.
  */
+export async function withPayment(
+  request: NextRequest,
+  _resource: string,
+  _description?: string
+): Promise<NextResponse | null> {
+  return checkPayment(request);
+}
+
+// ============ STATUS ============
+
 export function getX402Status() {
   return {
     enabled: X402_ENABLED,
-    facilitator: FACILITATOR_URL,
-    price: `$${PRICE_PER_QUERY} USDC`,
-    network: NETWORK,
-    treasury: TREASURY_ADDRESS ? `${TREASURY_ADDRESS.slice(0, 6)}...` : 'not configured',
+    version: '2.0',
+    sdk: '@x402/next + custom NLx402',
+    pricing: PRICING,
+    networks: {
+      base: {
+        facilitator: FACILITATORS.base.url,
+        provider: FACILITATORS.base.provider,
+        fees: FACILITATORS.base.fees,
+        payTo: `${FACILITATORS.base.payTo.slice(0, 6)}...${FACILITATORS.base.payTo.slice(-4)}`,
+      },
+      solana: {
+        facilitator: FACILITATORS.solana.url,
+        provider: FACILITATORS.solana.provider,
+        fees: FACILITATORS.solana.fees,
+        payTo: `${FACILITATORS.solana.payTo.slice(0, 6)}...${FACILITATORS.solana.payTo.slice(-4)}`,
+        features: ['nonce-locked', 'hash-bound', 'fast-expiring', 'zero-fees'],
+      },
+    },
+    manifest: '/.well-known/x402-manifest.json',
   };
 }

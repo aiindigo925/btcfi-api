@@ -1,0 +1,22 @@
+{
+  "name": "@aiindigo/btcfi",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for BTCFi API — Bitcoin + BTCFi data for AI agents",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["btcfi", "bitcoin", "x402", "ai-agent", "sdk", "solv-protocol", "micropayments"],
+  "author": "AI Indigo <contact@aiindigo.com>",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/aiindigo/btcfi-api" },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  },
+  "engines": { "node": ">=18" },
+  "files": ["dist/**/*", "README.md"]
+}

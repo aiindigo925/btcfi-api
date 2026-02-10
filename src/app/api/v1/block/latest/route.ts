@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLatestBlocks, getBtcPrice } from '@/lib/bitcoin';
+import { sanitizeInt } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 20);
+  const limit = sanitizeInt(searchParams.get('limit'), 5, 1, 20);
 
   try {
     const [blocks, price] = await Promise.all([
@@ -23,17 +24,15 @@ export async function GET(request: NextRequest) {
         difficulty: b.difficulty,
         time: new Date(b.timestamp * 1000).toISOString(),
       })),
-      price: {
-        btcUsd: price.USD,
-      },
+      price: { btcUsd: price.USD },
       _meta: {
         source: 'mempool.space',
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch blocks' },
+      { success: false, error: 'Failed to fetch blocks', code: 'FETCH_FAILED' },
       { status: 500 }
     );
   }

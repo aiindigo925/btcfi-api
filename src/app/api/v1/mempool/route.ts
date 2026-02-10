@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMempoolSummary, getMempoolRecent } from '@/lib/bitcoin';
-
 export async function GET(request: NextRequest) {
   try {
     const [summary, recent] = await Promise.all([
@@ -29,9 +28,9 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch mempool data' },
+      { success: false, error: 'Failed to fetch mempool data', code: 'FETCH_FAILED' },
       { status: 500 }
     );
   }

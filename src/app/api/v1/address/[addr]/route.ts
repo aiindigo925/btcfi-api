@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAddressInfo, getBtcPrice } from '@/lib/bitcoin';
+import { isValidBitcoinAddress, ERRORS } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ addr: string }> }
 ) {
   const { addr } = await params;
+
+  if (!isValidBitcoinAddress(addr)) {
+    return NextResponse.json(ERRORS.INVALID_ADDRESS, { status: 400 });
+  }
 
   try {
     const [info, price] = await Promise.all([
@@ -42,10 +47,10 @@ export async function GET(
         priceUsd: price.USD,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch address info' },
-      { status: 500 }
+      { success: false, error: 'Address not found or no activity', code: 'FETCH_FAILED' },
+      { status: 404 }
     );
   }
 }

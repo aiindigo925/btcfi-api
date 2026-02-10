@@ -1,0 +1,275 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BTCFi API",
+    "description": "Agent-native Bitcoin data, intelligence, BTCFi & security API via x402 micropayments. No tokens. No subscriptions. Payment IS authentication.",
+    "version": "2.0.0",
+    "contact": {
+      "name": "AI Indigo",
+      "url": "https://aiindigo.com",
+      "email": "contact@aiindigo.com"
+    },
+    "license": { "name": "MIT" }
+  },
+  "servers": [
+    { "url": "https://btcfi.aiindigo.com", "description": "Production" },
+    { "url": "http://localhost:3001", "description": "Development" }
+  ],
+  "paths": {
+    "/api/v1": {
+      "get": {
+        "summary": "API Index",
+        "tags": ["Core"],
+        "responses": { "200": { "description": "API status, endpoints, pricing" } }
+      }
+    },
+    "/api/v1/fees": {
+      "get": {
+        "summary": "Recommended Fees",
+        "description": "Current Bitcoin fee rates with USD estimates. $0.01 USDC.",
+        "tags": ["Core"],
+        "responses": {
+          "200": { "description": "Fee data with estimates" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/mempool": {
+      "get": {
+        "summary": "Mempool Summary",
+        "description": "Mempool stats and recent transactions. $0.01 USDC.",
+        "tags": ["Core"],
+        "responses": {
+          "200": { "description": "Mempool summary" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/address/{addr}": {
+      "get": {
+        "summary": "Address Info",
+        "tags": ["Address"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Address balance and stats" },
+          "400": { "description": "Invalid address" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/address/{addr}/utxos": {
+      "get": {
+        "summary": "Address UTXOs",
+        "tags": ["Address"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Unspent transaction outputs" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/address/{addr}/txs": {
+      "get": {
+        "summary": "Address Transactions",
+        "tags": ["Address"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Transaction history" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/tx/{txid}": {
+      "get": {
+        "summary": "Transaction Details",
+        "tags": ["Transaction"],
+        "parameters": [{ "name": "txid", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Full transaction data" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/tx/{txid}/status": {
+      "get": {
+        "summary": "Transaction Status",
+        "tags": ["Transaction"],
+        "parameters": [{ "name": "txid", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Confirmation status" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/tx/broadcast": {
+      "post": {
+        "summary": "Broadcast Transaction",
+        "description": "Broadcast a signed Bitcoin transaction. $0.05 USDC.",
+        "tags": ["Transaction"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "txHex": { "type": "string" } }, "required": ["txHex"] } } }
+        },
+        "responses": {
+          "200": { "description": "Transaction ID" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/block/latest": {
+      "get": {
+        "summary": "Latest Blocks",
+        "tags": ["Block"],
+        "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }],
+        "responses": {
+          "200": { "description": "Recent blocks" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/block/{id}": {
+      "get": {
+        "summary": "Block by Height or Hash",
+        "tags": ["Block"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Block data" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/api/v1/intelligence/fees": {
+      "get": {
+        "summary": "Fee Prediction",
+        "description": "AI fee prediction for 1h/6h/24h windows. $0.02 USDC.",
+        "tags": ["Intelligence"],
+        "responses": { "200": { "description": "Fee predictions" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/intelligence/whales": {
+      "get": {
+        "summary": "Whale Alert",
+        "description": "Large transaction detection. $0.02 USDC.",
+        "tags": ["Intelligence"],
+        "responses": { "200": { "description": "Whale transactions" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/intelligence/risk/{addr}": {
+      "get": {
+        "summary": "Address Risk Score",
+        "tags": ["Intelligence"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Risk assessment" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/intelligence/network": {
+      "get": {
+        "summary": "Network Health",
+        "tags": ["Intelligence"],
+        "responses": { "200": { "description": "Network health analysis" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/intelligence/consolidate/{addr}": {
+      "get": {
+        "summary": "UTXO Consolidation Advisor",
+        "tags": ["Intelligence"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Consolidation advice" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/security/threat/{addr}": {
+      "get": {
+        "summary": "YARA Threat Analysis",
+        "description": "Pattern-matched threat analysis. $0.02 USDC.",
+        "tags": ["Security"],
+        "parameters": [{ "name": "addr", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Threat assessment" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/staking/status": {
+      "get": {
+        "summary": "Staking Status",
+        "tags": ["Staking"],
+        "parameters": [{ "name": "address", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Staking tier info" } }
+      }
+    },
+    "/api/v1/solv/reserves": {
+      "get": {
+        "summary": "SolvBTC Reserves",
+        "description": "Total SolvBTC supply across chains with backing ratio. $0.02 USDC.",
+        "tags": ["Solv Protocol"],
+        "responses": { "200": { "description": "Reserve data" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/solv/yield": {
+      "get": {
+        "summary": "SolvBTC Yield",
+        "description": "xSolvBTC APY and yield strategies. $0.02 USDC.",
+        "tags": ["Solv Protocol"],
+        "responses": { "200": { "description": "Yield data" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/solv/liquidity": {
+      "get": {
+        "summary": "Cross-Chain Liquidity",
+        "description": "SolvBTC distribution across chains. $0.02 USDC.",
+        "tags": ["Solv Protocol"],
+        "parameters": [{ "name": "chain", "in": "query", "schema": { "type": "string", "enum": ["ethereum", "bnb", "arbitrum"] } }],
+        "responses": { "200": { "description": "Liquidity data" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/v1/solv/risk": {
+      "get": {
+        "summary": "Solv Risk Assessment",
+        "description": "Multi-factor risk scoring for Solv Protocol. $0.02 USDC.",
+        "tags": ["Solv Protocol"],
+        "responses": { "200": { "description": "Risk assessment" }, "402": { "$ref": "#/components/responses/PaymentRequired" } }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health Check",
+        "tags": ["System"],
+        "responses": { "200": { "description": "API and upstream health status" } }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "PaymentRequired": {
+        "description": "Payment required. Returns x402 payment instructions for Base (USDC) and Solana (USDC via NLx402).",
+        "headers": {
+          "X-Payment-Required": { "schema": { "type": "string" } },
+          "X-Payment-Amount": { "schema": { "type": "string" } },
+          "X-Payment-Networks": { "schema": { "type": "string" } }
+        }
+      }
+    },
+    "securitySchemes": {
+      "x402Payment": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Payment",
+        "description": "x402 payment proof (Base64 encoded)"
+      },
+      "walletSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Signature",
+        "description": "Wallet signature for higher rate limits"
+      }
+    }
+  },
+  "tags": [
+    { "name": "Core", "description": "Bitcoin blockchain data" },
+    { "name": "Address", "description": "Address information and UTXOs" },
+    { "name": "Transaction", "description": "Transaction data and broadcasting" },
+    { "name": "Block", "description": "Block data" },
+    { "name": "Intelligence", "description": "AI-powered analysis ($0.02/query)" },
+    { "name": "Security", "description": "Threat detection ($0.02/query)" },
+    { "name": "Solv Protocol", "description": "BTCFi data from Solv ($0.02/query)" },
+    { "name": "Staking", "description": "Staking tier management" },
+    { "name": "System", "description": "Health and status" }
+  ]
+}

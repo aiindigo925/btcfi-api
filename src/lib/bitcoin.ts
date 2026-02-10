@@ -112,11 +112,18 @@ export async function getRecommendedFees(): Promise<RecommendedFees> {
   return res.json();
 }
 
-export async function getFeeHistogram(): Promise<[number, number][]> {
+/**
+ * Projected next blocks with fee ranges from mempool.space
+ * (previously misnamed getFeeHistogram)
+ */
+export async function getMempoolBlocks(): Promise<unknown[]> {
   const res = await fetch(`${MEMPOOL_API}/v1/fees/mempool-blocks`);
-  if (!res.ok) throw new Error('Failed to fetch fee histogram');
+  if (!res.ok) throw new Error('Failed to fetch mempool blocks');
   return res.json();
 }
+
+/** @deprecated Use getMempoolBlocks() */
+export const getFeeHistogram = getMempoolBlocks;
 
 // ============ ADDRESS ============
 
@@ -193,6 +200,22 @@ export async function getLatestBlocks(limit: number = 10): Promise<Block[]> {
   if (!res.ok) throw new Error('Failed to fetch blocks');
   const blocks: Block[] = await res.json();
   return blocks.slice(0, limit);
+}
+
+// ============ GENERIC FETCH ============
+
+/**
+ * Generic fetcher for any mempool.space API path.
+ * Used by zk.ts and other modules that need raw endpoint access.
+ */
+export async function fetchBitcoinData(path: string): Promise<any> {
+  const res = await fetch(`${MEMPOOL_API}${path}`);
+  if (!res.ok) throw new Error(`mempool.space ${path} returned ${res.status}`);
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) return res.json();
+  const text = await res.text();
+  const num = Number(text);
+  return isNaN(num) ? text : num;
 }
 
 // ============ PRICE ============

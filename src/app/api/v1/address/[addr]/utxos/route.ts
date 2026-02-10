@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAddressUtxos, getBtcPrice } from '@/lib/bitcoin';
+import { isValidBitcoinAddress, ERRORS } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ addr: string }> }
 ) {
   const { addr } = await params;
+
+  if (!isValidBitcoinAddress(addr)) {
+    return NextResponse.json(ERRORS.INVALID_ADDRESS, { status: 400 });
+  }
 
   try {
     const [utxos, price] = await Promise.all([
@@ -41,9 +46,9 @@ export async function GET(
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch UTXOs' },
+      { success: false, error: 'Failed to fetch UTXOs', code: 'FETCH_FAILED' },
       { status: 500 }
     );
   }

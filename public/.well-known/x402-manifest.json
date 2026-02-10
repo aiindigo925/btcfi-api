@@ -1,0 +1,257 @@
+{
+  "x402": {
+    "version": "2.0",
+    "provider": "BTCFi API by AI Indigo",
+    "description": "Bitcoin data, BTCFi intelligence, security, ZK proofs & real-time streams for AI agents via x402 micropayments",
+    "website": "https://btcfi.aiindigo.com",
+    "contact": "ai@aiindigo.com",
+    "networks": [
+      {
+        "network": "base",
+        "asset": "USDC",
+        "assetAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "facilitator": "coinbase",
+        "payTo": "0xA6Bba2453673196ae22fb249C7eA9FA118a87150"
+      },
+      {
+        "network": "solana",
+        "asset": "USDC",
+        "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "facilitator": "nlx402",
+        "facilitatorUrl": "https://thrt.ai/nlx402",
+        "payTo": "8f2LTSW8ffDHE1UgkkUjJXpuXpvSq8gGXtWVrGX2uRqQ"
+      }
+    ],
+    "endpoints": [
+      {
+        "path": "/api/v1/fees",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Recommended fees, fee histogram, BTC price"
+      },
+      {
+        "path": "/api/v1/mempool",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Mempool summary, recent txs, congestion"
+      },
+      {
+        "path": "/api/v1/address/{addr}",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Address balance, tx count, chain+mempool stats"
+      },
+      {
+        "path": "/api/v1/address/{addr}/utxos",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Address UTXOs for transaction construction"
+      },
+      {
+        "path": "/api/v1/address/{addr}/txs",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Address transaction history"
+      },
+      {
+        "path": "/api/v1/tx/{txid}",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Full transaction details"
+      },
+      {
+        "path": "/api/v1/tx/{txid}/status",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Transaction confirmation status"
+      },
+      {
+        "path": "/api/v1/tx/broadcast",
+        "method": "POST",
+        "price": "0.05",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Broadcast signed transaction to Bitcoin network"
+      },
+      {
+        "path": "/api/v1/block/latest",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Latest blocks with details"
+      },
+      {
+        "path": "/api/v1/block/{id}",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "core",
+        "description": "Block by height or hash"
+      },
+      {
+        "path": "/api/v1/intelligence/consolidate/{addr}",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "intelligence",
+        "description": "UTXO consolidation advice with fee optimization"
+      },
+      {
+        "path": "/api/v1/intelligence/fees",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "intelligence",
+        "description": "Fee prediction with timing recommendations"
+      },
+      {
+        "path": "/api/v1/intelligence/whales",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "intelligence",
+        "description": "Whale transaction detection in mempool"
+      },
+      {
+        "path": "/api/v1/intelligence/risk/{addr}",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "intelligence",
+        "description": "Address risk scoring and pattern analysis"
+      },
+      {
+        "path": "/api/v1/intelligence/network",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "intelligence",
+        "description": "Network health metrics and congestion analysis"
+      },
+      {
+        "path": "/api/v1/security/threat/{addr}",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "security",
+        "description": "YARA-pattern threat analysis for Bitcoin addresses"
+      },
+      {
+        "path": "/api/v1/staking/status",
+        "method": "GET",
+        "price": "0.00",
+        "currency": "USDC",
+        "category": "staking",
+        "description": "Check staking tier and rate limit status"
+      },
+      {
+        "path": "/api/v1/solv/reserves",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "btcfi",
+        "description": "SolvBTC reserves across chains, backing ratio, TVL"
+      },
+      {
+        "path": "/api/v1/solv/yield",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "btcfi",
+        "description": "xSolvBTC APY, yield strategies, comparisons"
+      },
+      {
+        "path": "/api/v1/solv/liquidity",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "btcfi",
+        "description": "Cross-chain SolvBTC liquidity distribution"
+      },
+      {
+        "path": "/api/v1/solv/risk",
+        "method": "GET",
+        "price": "0.02",
+        "currency": "USDC",
+        "category": "btcfi",
+        "description": "Multi-factor Solv Protocol risk assessment"
+      },
+      {
+        "path": "/api/v1/zk/balance-proof",
+        "method": "POST",
+        "price": "0.03",
+        "currency": "USDC",
+        "category": "zk",
+        "description": "ZK proof: address balance >= threshold (Groth16)"
+      },
+      {
+        "path": "/api/v1/zk/age-proof",
+        "method": "POST",
+        "price": "0.03",
+        "currency": "USDC",
+        "category": "zk",
+        "description": "ZK proof: UTXO age >= N blocks"
+      },
+      {
+        "path": "/api/v1/zk/membership",
+        "method": "POST",
+        "price": "0.03",
+        "currency": "USDC",
+        "category": "zk",
+        "description": "ZK proof: address belongs to set"
+      },
+      {
+        "path": "/api/v1/zk/verify",
+        "method": "POST",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "zk",
+        "description": "Verify any BTCFi ZK proof"
+      },
+      {
+        "path": "/api/v1/stream",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "realtime",
+        "description": "SSE stream: new blocks, fee changes, mempool surges"
+      },
+      {
+        "path": "/api/v1/stream/whales",
+        "method": "GET",
+        "price": "0.01",
+        "currency": "USDC",
+        "category": "realtime",
+        "description": "SSE stream: whale transaction alerts"
+      }
+    ],
+    "mcp": {
+      "package": "@aiindigo/btcfi-mcp",
+      "registry": "npm",
+      "tools": 27,
+      "transport": "stdio"
+    },
+    "security": {
+      "walletAuth": true,
+      "encryptedResponses": true,
+      "yaraThreatAnalysis": true,
+      "replayProtection": true,
+      "rateLimiting": true
+    }
+  }
+}
