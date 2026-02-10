@@ -1,7 +1,7 @@
 /**
  * x402 Payment Configuration — MP2 Phase 12
  *
- * Official @x402/next SDK for Base (Coinbase facilitator, fee-free ERC-3009)
+ * Custom x402 implementation for Base (Coinbase facilitator, fee-free ERC-3009)
  * Custom NLx402 verification for Solana (PCEF nonprofit, zero fees)
  *
  * Payment is now handled at middleware level — routes don't call withPayment() anymore.
@@ -276,7 +276,7 @@ export function getX402Status() {
   return {
     enabled: X402_ENABLED,
     version: '2.0',
-    sdk: '@x402/next + custom NLx402',
+    sdk: 'custom x402 + NLx402',
     pricing: PRICING,
     networks: {
       base: {

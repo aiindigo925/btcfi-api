@@ -120,7 +120,7 @@ All API responses include:
 |---------|-----------|---------|
 | Response encryption | Curve25519 + XSalsa20-Poly1305 | tweetnacl |
 | Solana signatures | Ed25519 | tweetnacl |
-| EVM signatures | secp256k1 + keccak256 | ethers.js / @x402/evm |
+| EVM signatures | secp256k1 + keccak256 | ethers.js (dynamic import, rejects if unavailable) |
 | ZK proofs (live) | Simulated Groth16 zk-SNARKs | Web Crypto SHA-256 (circom circuits planned) |
 
 ---

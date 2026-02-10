@@ -1,7 +1,7 @@
 {
   "name": "btcfi-api",
   "version": "3.0.0",
-  "description": "Bitcoin data & BTCFi intelligence for AI agents via x402 micropayments",
+  "description": "Bitcoin data, BTCFi intelligence, ZK proofs & real-time streams for AI agents via x402 micropayments",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
@@ -10,11 +10,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "15.1.0",
+    "next": "15.5.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tweetnacl": "1.0.3",
-    "tweetnacl-util": "0.15.1"
+    "tweetnacl-util": "0.15.1",
+    "@vercel/kv": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "22.10.0",

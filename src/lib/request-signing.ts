@@ -192,10 +192,9 @@ async function verifySecp256k1(
       const recovered = ethers.verifyMessage(message, '0x' + sig);
       return recovered.toLowerCase() === address.toLowerCase();
     } catch {
-      // ethers not installed — accept structurally valid signatures
-      // Log warning: production should have ethers installed
-      console.warn('[request-signing] ethers.js not available, using structural validation only');
-      return sig.length === 130 && (normalizedV === 27 || normalizedV === 28);
+      // ethers not installed — REJECT unverifiable signatures
+      console.error('[request-signing] ethers.js not available. EVM signature verification disabled.');
+      return false;
     }
   } catch {
     return false;
