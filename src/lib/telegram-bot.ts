@@ -14,7 +14,10 @@ const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
 
-const FOOTER = '\n\n\u2014\n_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`';
+const FOOTER =
+  '\n\n\u2014\n' +
+  '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n' +
+  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
 
 // Lazy singleton — only created when token is set
 let _bot: Bot | null = null;
@@ -258,7 +261,7 @@ function registerCommands(b: Bot): void {
         title: (bal.btc || '0') + ' BTC',
         description: query.slice(0, 20) + '... \u2014 $' + (bal.usd || '0'),
         input_message_content: {
-          message_text: '\u20bf ' + query + '\nBalance: ' + (bal.btc || '0') + ' BTC ($' + (bal.usd || '0') + ')\nTxs: ' + (data.stats?.txCount || 0) + '\n\n\ud83d\udca1 btcfi.aiindigo.com | npm i @aiindigo/btcfi',
+          message_text: '\u20bf ' + query + '\nBalance: ' + (bal.btc || '0') + ' BTC ($' + (bal.usd || '0') + ')\nTxs: ' + (data.stats?.txCount || 0) + '\n\n\ud83d\udca1 btcfi.aiindigo.com | aiindigo.com | futuretoolsai.com | openclawterrace.com',
         },
       }]);
     } catch { /* ignore inline failures */ }
