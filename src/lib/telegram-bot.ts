@@ -107,7 +107,6 @@ export async function postWhaleToChannel(whale: {
 
   await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
     parse_mode: 'MarkdownV2',
-    // @ts-expect-error grammY link_preview_options
     link_preview_options: { is_disabled: true },
   });
 }
