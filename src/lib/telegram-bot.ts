@@ -16,18 +16,27 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 // Lazy singleton — only created when token is set
 let _bot: Bot | null = null;
 
-function getBot(): Bot {
+let _initialized = false;
+
+async function getBot(): Promise<Bot> {
   if (!_bot) {
     if (!TOKEN) throw new Error('TELEGRAM_BOT_TOKEN not set');
     _bot = new Bot(TOKEN);
     registerCommands(_bot);
+  }
+  if (!_initialized) {
+    await _bot.init();
+    _initialized = true;
   }
   return _bot;
 }
 
 /** Export for webhook route */
 export const bot = {
-  handleUpdate: async (update: any) => getBot().handleUpdate(update),
+  handleUpdate: async (update: any) => {
+    const b = await getBot();
+    return b.handleUpdate(update);
+  },
 };
 
 // ============ HELPERS ============
