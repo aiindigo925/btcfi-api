@@ -1,5 +1,26 @@
 # BTCFi API — Changelog
 
+## v3.0.1 (2026-02-11)
+
+**Distribution: npm packages, MCP Registry, Glama, Telegram bot activation.**
+
+### Published
+- `@aiindigo/btcfi@3.0.0` on npm
+- `@aiindigo/btcfi-mcp@3.0.1` on npm
+- MCP Registry: `io.github.aiindigo925/btcfi` on registry.modelcontextprotocol.io
+- Glama: indexed at glama.ai/mcp/servers
+
+### Activated
+- Telegram bot [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) — 9 commands + inline mode
+  - `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`
+  - Webhook at `/api/telegram/webhook` via grammY
+
+### Fixed
+- grammY `bot.init()` required before `handleUpdate()` in serverless environment
+- Removed leaked MCP publisher tokens from git history
+
+---
+
 ## v3.0.0 (2026-02-11)
 
 **Major release: Full platform with ZK proofs, real-time streams, and human interfaces.**

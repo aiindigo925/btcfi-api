@@ -30,7 +30,7 @@ const risk = await btcfi.intelligence.risk("bc1q...");
 
 **For Humans:**
 - [Web Dashboard](https://btcfi.aiindigo.com/dashboard)
-- [Telegram Bot](https://t.me/BTCFiBot) — `/price`, `/fees`, `/whale`, `/risk`
+- [Telegram Bot](https://t.me/BTC_Fi_Bot) — `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`
 - [Chrome Extension](https://btcfi.aiindigo.com) — price badge, whale alerts, address inspector
 - [Interactive API Docs](https://btcfi.aiindigo.com/api/docs)
 
@@ -77,12 +77,15 @@ Report vulnerabilities: security@aiindigo.com
 | [docs/SECURITY.md](docs/SECURITY.md) | Security model and features |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history |
 
-## Packages
+## Packages & Distribution
 
 | Package | Description |
 |---------|-------------|
 | [`@aiindigo/btcfi`](https://www.npmjs.com/package/@aiindigo/btcfi) | TypeScript SDK — 28 methods |
 | [`@aiindigo/btcfi-mcp`](https://www.npmjs.com/package/@aiindigo/btcfi-mcp) | MCP Server — 27 tools for Claude, ChatGPT, Gemini |
+| [MCP Registry](https://registry.modelcontextprotocol.io) | `io.github.aiindigo925/btcfi` |
+| [Glama](https://glama.ai/mcp/servers) | Indexed — searchable MCP directory |
+| [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) | Telegram bot — 9 commands + inline mode |
 
 ## License
 

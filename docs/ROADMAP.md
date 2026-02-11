@@ -39,11 +39,13 @@
 - OpenAPI spec updated to 31 endpoints
 
 ### MP4 — Platform Expansion (20 tasks)
-- npm packages published: SDK + MCP server
-- MCP registry submissions (Official, Glama, Smithery)
+- npm packages published: `@aiindigo/btcfi@3.0.0` + `@aiindigo/btcfi-mcp@3.0.1`
+- MCP Registry: `io.github.aiindigo925/btcfi` on registry.modelcontextprotocol.io ✅
+- Glama: indexed at glama.ai/mcp/servers ✅
+- Smithery: skipped (requires remote HTTP transport, not stdio)
 - PEAC Protocol: cryptographic payment receipts + `/.well-known/peac.txt`
 - x402 V2: CAIP-2 chain IDs, Discovery extension
-- Telegram bot: 9 commands + inline mode via grammY
+- Telegram bot [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot): 9 commands + inline mode via grammY ✅
 - Chrome extension: price badge, fee calculator, whale alerts, address inspector
 - Web dashboard: overview, address lookup, whale watch, fee calculator
 - Swagger UI interactive docs at `/api/docs`
