@@ -176,7 +176,7 @@ Decentralized RPC via Whistle Network`}</div>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
             <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
             <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
-            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>@BTCFiBot</span>
+            <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open @BTC_Fi_Bot →</a>
           </div>
         </div>
       </div>
@@ -189,11 +189,11 @@ Decentralized RPC via Whistle Network`}</div>
             <div style={{ color: '#4ade80', fontSize: '13px', fontWeight: 600 }}>📖 Interactive Docs</div>
             <p style={{ ...css.desc, marginTop: '4px' }}>OpenAPI 3.1 + Swagger UI</p>
           </a>
-          <a href="https://www.npmjs.com/package/@aiindigo/btcfi" style={{ ...css.card, textDecoration: 'none' }} target="_blank">
+          <a href="https://www.npmjs.com/package/@aiindigo/btcfi" style={{ ...css.card, textDecoration: 'none' }} target="_blank" rel="noopener noreferrer">
             <div style={{ color: '#f7931a', fontSize: '13px', fontWeight: 600 }}>📦 SDK</div>
             <p style={{ ...css.desc, marginTop: '4px' }}>npm i @aiindigo/btcfi — 28 methods</p>
           </a>
-          <a href="https://www.npmjs.com/package/@aiindigo/btcfi-mcp" style={{ ...css.card, textDecoration: 'none' }} target="_blank">
+          <a href="https://www.npmjs.com/package/@aiindigo/btcfi-mcp" style={{ ...css.card, textDecoration: 'none' }} target="_blank" rel="noopener noreferrer">
             <div style={{ color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}>🔧 MCP Server</div>
             <p style={{ ...css.desc, marginTop: '4px' }}>npx @aiindigo/btcfi-mcp — 27 tools</p>
           </a>
@@ -203,7 +203,7 @@ Decentralized RPC via Whistle Network`}</div>
       {/* Protocols */}
       <div style={css.section}>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const }}>
-          <a href="https://x402.org" target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>Powered by <span style={{ color: '#f7931a', fontWeight: 600 }}>x402</span></a>
+          <a href="https://x402.org" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>Powered by <span style={{ color: '#f7931a', fontWeight: 600 }}>x402</span></a>
           <a href="/.well-known/peac.txt" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>PEAC Protocol <span style={{ color: '#4ade80' }}>✓</span></a>
           <a href="/.well-known/x402-discovery.json" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>x402 V2 Discovery <span style={{ color: '#4ade80' }}>✓</span></a>
         </div>
@@ -211,8 +211,8 @@ Decentralized RPC via Whistle Network`}</div>
 
       {/* Footer */}
       <div style={css.footer}>
-        <p>Built by <a href="https://aiindigo.com" style={css.link}>AI Indigo</a> · <a href="https://github.com/aiindigo925/btcfi-api" target="_blank" style={css.link}>GitHub</a> · No tokens · No subscriptions · Payment IS authentication</p>
-        <p style={{ marginTop: '8px' }}>Powered by mempool.space · Solv Protocol · Whistle Network · PCEF/NLx402</p>
+        <p>Built by <a href="https://aiindigo.com" target="_blank" rel="noopener noreferrer" style={css.link}>AI Indigo</a> · <a href="https://futuretoolsai.com" target="_blank" rel="noopener noreferrer" style={css.link}>FutureTools AI</a> · <a href="https://openclawterrace.com" target="_blank" rel="noopener noreferrer" style={css.link}>OpenClaw Terrace</a> · <a href="https://github.com/aiindigo925/btcfi-api" target="_blank" rel="noopener noreferrer" style={css.link}>GitHub</a></p>
+        <p style={{ marginTop: '8px' }}>Powered by <a href="https://mempool.space" target="_blank" rel="noopener noreferrer" style={css.link}>mempool.space</a> · <a href="https://solv.finance" target="_blank" rel="noopener noreferrer" style={css.link}>Solv Protocol</a> · <a href="https://www.whistle.network" target="_blank" rel="noopener noreferrer" style={css.link}>Whistle Network</a> · <a href="https://x402.org" target="_blank" rel="noopener noreferrer" style={css.link}>x402</a> · <a href="https://pcef.org" target="_blank" rel="noopener noreferrer" style={css.link}>PCEF/NLx402</a></p>
       </div>
     </div>
   );
