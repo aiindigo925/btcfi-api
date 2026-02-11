@@ -3,6 +3,7 @@
  *
  * Commands: /price, /fees, /mempool, /address, /tx, /whale, /risk, /network, /help
  * Inline mode: @BTCFiBot <address>
+ * Channel posting: @BTCFi_Whales whale alerts (MP5 Phase 1)
  *
  * Lazy-initialized: grammY throws on empty token, so Bot is only
  * created when TELEGRAM_BOT_TOKEN is set and first update arrives.
@@ -13,15 +14,22 @@ import { Bot } from 'grammy';
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
+const WHALE_CHANNEL_ID = process.env.WHALE_CHANNEL_ID || '';
 
+// Footer for DM bot responses
 const FOOTER =
   '\n\n\u2014\n' +
   '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n' +
   '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
 
+// Footer for channel posts (shorter, channel-optimized)
+const CH_FOOTER =
+  '\n\n\u2014\n' +
+  '\ud83d\udcca [BTCFi API](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n' +
+  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
+
 // Lazy singleton — only created when token is set
 let _bot: Bot | null = null;
-
 let _initialized = false;
 
 async function getBot(): Promise<Bot> {
@@ -44,6 +52,40 @@ export const bot = {
     return b.handleUpdate(update);
   },
 };
+
+// ============ WHALE CHANNEL POSTING (MP5 Phase 1) ============
+
+export async function postWhaleToChannel(whale: {
+  txid: string;
+  totalValueBtc: string;
+  totalValueUsd: string;
+  fee: number;
+  feeRate: string;
+  inputs: number;
+  outputs: number;
+}): Promise<void> {
+  if (!WHALE_CHANNEL_ID || !TOKEN) return;
+  const b = await getBot();
+
+  const btc = esc(whale.totalValueBtc);
+  const usd = esc(parseFloat(whale.totalValueUsd).toLocaleString());
+  const txShort = esc(whale.txid.slice(0, 16));
+  const fr = esc(whale.feeRate);
+
+  const msg =
+    '\ud83d\udc0b *WHALE ALERT*\n\n' +
+    '\ud83d\udcb0 ' + btc + ' BTC \\(\\$' + usd + '\\)\n' +
+    '\ud83d\udcc4 TX: `' + txShort + '\\.\\.\\.' + '`\n' +
+    '\u26fd Fee: ' + fr + '\n' +
+    '\ud83d\udce5 Inputs: ' + whale.inputs + ' \u00b7 \ud83d\udce4 Outputs: ' + whale.outputs +
+    CH_FOOTER;
+
+  await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
+    parse_mode: 'MarkdownV2',
+    // @ts-expect-error grammY types
+    disable_web_page_preview: true,
+  });
+}
 
 // ============ HELPERS ============
 
