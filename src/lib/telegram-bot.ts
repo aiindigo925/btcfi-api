@@ -12,6 +12,9 @@ import { Bot } from 'grammy';
 
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
+
+const FOOTER = '\n\n\u2014\n_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`';
 
 // Lazy singleton — only created when token is set
 let _bot: Bot | null = null;
@@ -42,8 +45,10 @@ export const bot = {
 // ============ HELPERS ============
 
 async function api(path: string): Promise<any> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (INTERNAL_KEY) headers['X-Internal-Key'] = INTERNAL_KEY;
   const res = await fetch(`${API}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
@@ -68,30 +73,30 @@ function looksLikeTxid(s: string): boolean {
 
 function registerCommands(b: Bot): void {
   b.command('start', (ctx) => ctx.reply(
-    '₿ *BTCFi Bot* — Bitcoin Intelligence\n\n' +
-    '/price — BTC price\n' +
-    '/fees — Fee estimates\n' +
-    '/mempool — Mempool status\n' +
-    '/address `<addr>` — Address info\n' +
-    '/tx `<txid>` — Transaction details\n' +
-    '/whale — Recent whale movements\n' +
-    '/risk `<addr>` — Address risk score\n' +
-    '/network — Network health\n' +
-    '/help — This message\n\n' +
+    '\u20bf *BTCFi Bot* \u2014 Bitcoin Intelligence\n\n' +
+    '/price \u2014 BTC price\n' +
+    '/fees \u2014 Fee estimates\n' +
+    '/mempool \u2014 Mempool status\n' +
+    '/address `<addr>` \u2014 Address info\n' +
+    '/tx `<txid>` \u2014 Transaction details\n' +
+    '/whale \u2014 Recent whale movements\n' +
+    '/risk `<addr>` \u2014 Address risk score\n' +
+    '/network \u2014 Network health\n' +
+    '/help \u2014 This message\n\n' +
     '_Powered by_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com)',
     { parse_mode: 'MarkdownV2' }
   ));
 
   b.command('help', (ctx) => ctx.reply(
-    '₿ *BTCFi Commands*\n\n' +
-    '`/price` — Live BTC price\n' +
-    '`/fees` — Fee recommendations\n' +
-    '`/mempool` — Mempool summary\n' +
-    '`/address bc1q...` — Balance & stats\n' +
-    '`/tx abc123...` — TX details\n' +
-    '`/whale` — Whale alert feed\n' +
-    '`/risk bc1q...` — Risk analysis\n' +
-    '`/network` — Network health',
+    '\u20bf *BTCFi Commands*\n\n' +
+    '`/price` \u2014 Live BTC price\n' +
+    '`/fees` \u2014 Fee recommendations\n' +
+    '`/mempool` \u2014 Mempool summary\n' +
+    '`/address bc1q...` \u2014 Balance & stats\n' +
+    '`/tx abc123...` \u2014 TX details\n' +
+    '`/whale` \u2014 Whale alert feed\n' +
+    '`/risk bc1q...` \u2014 Risk analysis\n' +
+    '`/network` \u2014 Network health',
     { parse_mode: 'MarkdownV2' }
   ));
 
@@ -99,13 +104,15 @@ function registerCommands(b: Bot): void {
     try {
       const data = await api('/api/v1/fees');
       const p = data.price || {};
+      const usd = esc(Math.round(p.btcUsd || 0).toLocaleString());
+      const eur = esc(Math.round(p.btcEur || 0).toLocaleString());
       await ctx.reply(
-        `₿ *Bitcoin Price*\n\n` +
-        `💵 USD: \\$${esc(Math.round(p.btcUsd || 0).toLocaleString())}\n` +
-        `💶 EUR: €${esc(Math.round(p.btcEur || 0).toLocaleString())}`,
+        '\u20bf *Bitcoin Price*\n\n' +
+        '\ud83d\udcb5 USD: \\$' + usd + '\n' +
+        '\ud83d\udcb6 EUR: \u20ac' + eur + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Failed to fetch price'); }
+    } catch { await ctx.reply('\u274c Failed to fetch price'); }
   });
 
   b.command('fees', async (ctx) => {
@@ -113,15 +120,18 @@ function registerCommands(b: Bot): void {
       const data = await api('/api/v1/fees');
       const r = data.fees?.recommended || {};
       const e = data.estimate || {};
+      const fast = e.fastest?.usd ? ' \\(' + esc(e.fastest.usd) + '\\)' : '';
+      const med = e.medium?.usd ? ' \\(' + esc(e.medium.usd) + '\\)' : '';
+      const slow = e.slow?.usd ? ' \\(' + esc(e.slow.usd) + '\\)' : '';
       await ctx.reply(
-        `⛽ *Fee Estimates*\n\n` +
-        `🚀 Fast: ${r.fastestFee || '—'} sat/vB ${e.fastest?.usd ? `\\(${esc(e.fastest.usd)}\\)` : ''}\n` +
-        `⏱ Medium: ${r.halfHourFee || '—'} sat/vB ${e.medium?.usd ? `\\(${esc(e.medium.usd)}\\)` : ''}\n` +
-        `🐌 Slow: ${r.hourFee || '—'} sat/vB ${e.slow?.usd ? `\\(${esc(e.slow.usd)}\\)` : ''}\n` +
-        `📏 Economy: ${r.economyFee || '—'} sat/vB`,
+        '\u26fd *Fee Estimates*\n\n' +
+        '\ud83d\ude80 Fast: ' + (r.fastestFee || '\u2014') + ' sat/vB' + fast + '\n' +
+        '\u23f1 Medium: ' + (r.halfHourFee || '\u2014') + ' sat/vB' + med + '\n' +
+        '\ud83d\udc0c Slow: ' + (r.hourFee || '\u2014') + ' sat/vB' + slow + '\n' +
+        '\ud83d\udccf Economy: ' + (r.economyFee || '\u2014') + ' sat/vB' + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Failed to fetch fees'); }
+    } catch { await ctx.reply('\u274c Failed to fetch fees'); }
   });
 
   b.command('mempool', async (ctx) => {
@@ -129,13 +139,13 @@ function registerCommands(b: Bot): void {
       const data = await api('/api/v1/mempool');
       const m = data.mempool || {};
       await ctx.reply(
-        `🏊 *Mempool*\n\n` +
-        `📊 Transactions: ${esc((m.count || 0).toLocaleString())}\n` +
-        `💾 Size: ${esc(m.vsizeMB || '—')} MB\n` +
-        `💰 Total fees: ${esc(m.totalFeeBTC || '—')} BTC`,
+        '\ud83c\udfca *Mempool*\n\n' +
+        '\ud83d\udcca Transactions: ' + esc((m.count || 0).toLocaleString()) + '\n' +
+        '\ud83d\udcbe Size: ' + esc(m.vsizeMB || '\u2014') + ' MB\n' +
+        '\ud83d\udcb0 Total fees: ' + esc(m.totalFeeBTC || '\u2014') + ' BTC' + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Failed to fetch mempool'); }
+    } catch { await ctx.reply('\u274c Failed to fetch mempool'); }
   });
 
   b.command('address', async (ctx) => {
@@ -144,18 +154,18 @@ function registerCommands(b: Bot): void {
       return ctx.reply('Usage: /address <bitcoin_address>\nExample: /address bc1q...');
     }
     try {
-      const data = await api(`/api/v1/address/${encodeURIComponent(addr)}`);
+      const data = await api('/api/v1/address/' + encodeURIComponent(addr));
       const bal = data.balance?.confirmed || {};
       const s = data.stats || {};
       await ctx.reply(
-        `📍 *Address*\n\n` +
-        `\`${esc(addr.slice(0, 12))}...${esc(addr.slice(-6))}\`\n\n` +
-        `💰 Balance: ${esc(bal.btc || '0')} BTC \\(\\$${esc(bal.usd || '0')}\\)\n` +
-        `📊 Transactions: ${s.txCount || 0}\n` +
-        `📥 Funded: ${s.fundedTxos || 0} · 📤 Spent: ${s.spentTxos || 0}`,
+        '\ud83d\udccd *Address*\n\n' +
+        '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + esc(addr.slice(-6)) + '`\n\n' +
+        '\ud83d\udcb0 Balance: ' + esc(bal.btc || '0') + ' BTC \\(\\$' + esc(bal.usd || '0') + '\\)\n' +
+        '\ud83d\udcca Transactions: ' + (s.txCount || 0) + '\n' +
+        '\ud83d\udce5 Funded: ' + (s.fundedTxos || 0) + ' \u00b7 \ud83d\udce4 Spent: ' + (s.spentTxos || 0) + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Address not found or invalid'); }
+    } catch { await ctx.reply('\u274c Address not found or invalid'); }
   });
 
   b.command('tx', async (ctx) => {
@@ -164,35 +174,32 @@ function registerCommands(b: Bot): void {
       return ctx.reply('Usage: /tx <transaction_id>\n(64 hex characters)');
     }
     try {
-      const data = await api(`/api/v1/tx/${encodeURIComponent(txid)}`);
+      const data = await api('/api/v1/tx/' + encodeURIComponent(txid));
       const tx = data.transaction || {};
       const st = tx.status || {};
-      const confirmed = st.confirmed ? '✅ Confirmed' : '⏳ Pending';
-      await ctx.reply(
-        `📄 *Transaction*\n\n` +
-        `\`${esc(txid.slice(0, 16))}...\`\n\n` +
-        `${esc(confirmed)}\n` +
-        `${st.blockHeight ? `📦 Block: ${st.blockHeight}\n` : ''}` +
-        `${st.confirmations ? `🔢 Confirmations: ${st.confirmations}\n` : ''}` +
-        `📏 Size: ${tx.size || '—'} bytes\n` +
-        `⚖️ Weight: ${tx.weight || '—'}\n` +
-        `💰 Fee: ${esc(tx.fee?.sats ? `${tx.fee.sats} sats (${tx.fee.rate || '—'})` : '—')}`,
-        { parse_mode: 'MarkdownV2' }
-      );
-    } catch { await ctx.reply('❌ Transaction not found'); }
+      const confirmed = st.confirmed ? '\u2705 Confirmed' : '\u23f3 Pending';
+      let msg = '\ud83d\udcc4 *Transaction*\n\n' +
+        '`' + esc(txid.slice(0, 16)) + '\\.\\.\\.' + '`\n\n' +
+        esc(confirmed) + '\n';
+      if (st.blockHeight) msg += '\ud83d\udce6 Block: ' + st.blockHeight + '\n';
+      if (st.confirmations) msg += '\ud83d\udd22 Confirmations: ' + st.confirmations + '\n';
+      msg += '\ud83d\udccf Size: ' + (tx.size || '\u2014') + ' bytes\n' +
+        '\u2696\ufe0f Weight: ' + (tx.weight || '\u2014') + '\n' +
+        '\ud83d\udcb0 Fee: ' + esc(tx.fee?.sats ? tx.fee.sats + ' sats (' + (tx.fee.rate || '\u2014') + ')' : '\u2014') + FOOTER;
+      await ctx.reply(msg, { parse_mode: 'MarkdownV2' });
+    } catch { await ctx.reply('\u274c Transaction not found'); }
   });
 
   b.command('whale', async (ctx) => {
     try {
       const data = await api('/api/v1/intelligence/whales');
-      // API returns { data: { transactions: [...] } }
       const whales = data.data?.transactions || [];
-      if (!whales.length) return ctx.reply('🐋 No recent whale activity');
+      if (!whales.length) return ctx.reply('\ud83d\udc0b No recent whale activity');
       const lines = whales.slice(0, 5).map((w: any) =>
-        `🐋 ${esc(w.totalValueBtc || '?')} BTC — \`${esc((w.txid || '').slice(0, 12))}...\``
+        '\ud83d\udc0b ' + esc(w.totalValueBtc || '?') + ' BTC \u2014 `' + esc((w.txid || '').slice(0, 12)) + '\\.\\.\\.' + '`'
       );
-      await ctx.reply(`🐋 *Recent Whales*\n\n${lines.join('\n')}`, { parse_mode: 'MarkdownV2' });
-    } catch { await ctx.reply('❌ Failed to fetch whale data'); }
+      await ctx.reply('\ud83d\udc0b *Recent Whales*\n\n' + lines.join('\n') + FOOTER, { parse_mode: 'MarkdownV2' });
+    } catch { await ctx.reply('\u274c Failed to fetch whale data'); }
   });
 
   b.command('risk', async (ctx) => {
@@ -201,20 +208,21 @@ function registerCommands(b: Bot): void {
       return ctx.reply('Usage: /risk <bitcoin_address>');
     }
     try {
-      const data = await api(`/api/v1/intelligence/risk/${encodeURIComponent(addr)}`);
+      const data = await api('/api/v1/intelligence/risk/' + encodeURIComponent(addr));
       const d = data.data || {};
       const score = d.riskScore || 0;
       const grade = d.riskGrade || '?';
-      const emoji = score < 30 ? '🟢' : score < 50 ? '🟡' : '🔴';
+      const emoji = score < 30 ? '\ud83d\udfe2' : score < 50 ? '\ud83d\udfe1' : '\ud83d\udd34';
+      const bar = '\u2588'.repeat(Math.round(score / 10)) + '\u2591'.repeat(10 - Math.round(score / 10));
       await ctx.reply(
-        `${emoji} *Risk Analysis*\n\n` +
-        `\`${esc(addr.slice(0, 12))}...\`\n\n` +
-        `Score: ${score}/100 \\(Grade ${esc(grade)}\\)\n` +
-        `${'█'.repeat(Math.round(score / 10))}${'░'.repeat(10 - Math.round(score / 10))}\n\n` +
-        `${esc(d.summary || '')}`,
+        emoji + ' *Risk Analysis*\n\n' +
+        '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + '`\n\n' +
+        'Score: ' + score + '/100 \\(Grade ' + esc(grade) + '\\)\n' +
+        bar + '\n\n' +
+        esc(d.summary || '') + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Risk analysis failed'); }
+    } catch { await ctx.reply('\u274c Risk analysis failed'); }
   });
 
   b.command('network', async (ctx) => {
@@ -224,32 +232,33 @@ function registerCommands(b: Bot): void {
       const c = d.congestion || {};
       const bp = d.blockProduction || {};
       const fm = d.feeMarket || {};
+      const price = esc(Math.round(d.price?.usd || 0).toLocaleString());
       await ctx.reply(
-        `🌐 *Network Health*\n\n` +
-        `🏊 Congestion: ${esc(c.label || '—')} \\(${c.level || 0}/10\\)\n` +
-        `⚡ Hashrate trend: ${esc(d.hashrateTrend || '—')}\n` +
-        `📦 Blocks/hour: ${esc(bp.blocksPerHour || '—')}\n` +
-        `⏱ Avg interval: ${bp.avgIntervalSec || '—'}s\n` +
-        `🚀 Fast fee: ${fm.fastestFee || '—'} sat/vB\n` +
-        `💵 BTC: \\$${esc(Math.round(d.price?.usd || 0).toLocaleString())}`,
+        '\ud83c\udf10 *Network Health*\n\n' +
+        '\ud83c\udfca Congestion: ' + esc(c.label || '\u2014') + ' \\(' + (c.level || 0) + '/10\\)\n' +
+        '\u26a1 Hashrate trend: ' + esc(d.hashrateTrend || '\u2014') + '\n' +
+        '\ud83d\udce6 Blocks/hour: ' + esc(bp.blocksPerHour || '\u2014') + '\n' +
+        '\u23f1 Avg interval: ' + (bp.avgIntervalSec || '\u2014') + 's\n' +
+        '\ud83d\ude80 Fast fee: ' + (fm.fastestFee || '\u2014') + ' sat/vB\n' +
+        '\ud83d\udcb5 BTC: \\$' + price + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('❌ Network health unavailable'); }
+    } catch { await ctx.reply('\u274c Network health unavailable'); }
   });
 
   b.on('inline_query', async (ctx) => {
     const query = ctx.inlineQuery.query.trim();
     if (!query || !looksLikeBtcAddress(query)) return;
     try {
-      const data = await api(`/api/v1/address/${encodeURIComponent(query)}`);
+      const data = await api('/api/v1/address/' + encodeURIComponent(query));
       const bal = data.balance?.confirmed || {};
       await ctx.answerInlineQuery([{
         type: 'article',
-        id: `addr-${query.slice(0, 8)}`,
-        title: `${bal.btc || '0'} BTC`,
-        description: `${query.slice(0, 20)}... — $${bal.usd || '0'}`,
+        id: 'addr-' + query.slice(0, 8),
+        title: (bal.btc || '0') + ' BTC',
+        description: query.slice(0, 20) + '... \u2014 $' + (bal.usd || '0'),
         input_message_content: {
-          message_text: `₿ ${query}\nBalance: ${bal.btc || '0'} BTC ($${bal.usd || '0'})\nTxs: ${data.stats?.txCount || 0}`,
+          message_text: '\u20bf ' + query + '\nBalance: ' + (bal.btc || '0') + ' BTC ($' + (bal.usd || '0') + ')\nTxs: ' + (data.stats?.txCount || 0) + '\n\n\ud83d\udca1 btcfi.aiindigo.com | npm i @aiindigo/btcfi',
         },
       }]);
     } catch { /* ignore inline failures */ }

@@ -68,6 +68,9 @@ const SECURITY_HEADERS = {
 
 // ============ PATH MATCHING ============
 
+/** Internal API key for bot/service bypass */
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+
 /** Paths that skip x402 payment entirely */
 const FREE_PATHS = [
   '/api/health',
@@ -157,6 +160,15 @@ export async function middleware(request: NextRequest) {
         },
       }
     );
+  }
+
+  // Internal service bypass (Telegram bot, etc.)
+  const internalKey = request.headers.get('X-Internal-Key');
+  if (INTERNAL_API_KEY && internalKey === INTERNAL_API_KEY) {
+    const response = NextResponse.next();
+    Object.entries(CORS_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+    return response;
   }
 
   // x402 payment check for paid endpoints
