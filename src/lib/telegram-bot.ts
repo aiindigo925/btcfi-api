@@ -27,7 +27,7 @@ function getBot(): Bot {
 
 /** Export for webhook route */
 export const bot = {
-  handleUpdate: async (update: unknown) => getBot().handleUpdate(update),
+  handleUpdate: async (update: any) => getBot().handleUpdate(update),
 };
 
 // ============ HELPERS ============
