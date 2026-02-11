@@ -1,6 +1,7 @@
 {
   "name": "@aiindigo/btcfi-mcp",
-  "version": "3.0.0",
+  "version": "3.0.1",
+  "mcpName": "io.github.aiindigo925/btcfi",
   "description": "MCP server for BTCFi API — 27 tools for Bitcoin data, intelligence, security, Solv Protocol, and ZK proofs with x402 auto-payment",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
