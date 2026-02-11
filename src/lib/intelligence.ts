@@ -200,36 +200,62 @@ function classifyWhaleSignal(
   vouts: any[],
   totalOut: number
 ): { signal: WhaleSignal; signalReason: string } {
+  const values = vouts.map((v: any) => v.value || 0).filter((v: number) => v > 0).sort((a: number, b: number) => b - a);
+  const maxOut = values.length > 0 ? values[0] : 0;
+  const maxPct = totalOut > 0 ? maxOut / totalOut : 0;
+
   // Fan-out: few inputs, many outputs → distribution/sell
   if (inputs <= 3 && outputs >= 5) {
-    return { signal: 'sell', signalReason: `Distribution: ${inputs} inputs → ${outputs} outputs (fan-out)` };
+    return { signal: 'sell', signalReason: `Distribution: ${inputs} in → ${outputs} out (fan-out)` };
   }
 
   // Consolidation: many inputs, few outputs → accumulation/buy
-  if (inputs >= 5 && outputs <= 3) {
-    return { signal: 'buy', signalReason: `Consolidation: ${inputs} inputs → ${outputs} outputs (accumulation)` };
+  if (inputs >= 3 && outputs <= 2) {
+    return { signal: 'buy', signalReason: `Consolidation: ${inputs} inputs merged → ${outputs} outputs (accumulation)` };
   }
 
-  // Check output concentration — if one output holds >80% of value → likely transfer to cold wallet (buy/hold)
-  if (vouts.length >= 2) {
-    const maxOut = Math.max(...vouts.map((v: any) => v.value || 0));
-    if (maxOut / totalOut > 0.8) {
-      return { signal: 'buy', signalReason: `Single dominant output (${(maxOut / totalOut * 100).toFixed(0)}% of value) → cold storage accumulation` };
+  // 2-output pattern (most common whale tx: payment + change)
+  if (outputs === 2 && values.length === 2) {
+    const ratio = values[0] / values[1];
+    if (ratio >= 4) {
+      // Dominant output is >80% → large move to single destination = accumulation/cold storage
+      return { signal: 'buy', signalReason: `Large single move (${(maxPct * 100).toFixed(0)}% to one output) → accumulation` };
     }
+    if (ratio < 4 && ratio >= 1.5) {
+      // Uneven split → payment + change pattern = spending/sell
+      return { signal: 'sell', signalReason: `Payment pattern: ${(maxPct * 100).toFixed(0)}%/${((1 - maxPct) * 100).toFixed(0)}% split (spend + change)` };
+    }
+    // Near-equal split → splitting holdings = distribution
+    return { signal: 'sell', signalReason: `Holdings split: near-equal ${values.length} outputs (distribution)` };
+  }
+
+  // Single output → sweep to one address = accumulation
+  if (outputs === 1) {
+    return { signal: 'buy', signalReason: `Full sweep to single output (accumulation)` };
+  }
+
+  // Dominant output (>70%) with multiple outputs
+  if (maxPct > 0.7 && outputs <= 3) {
+    return { signal: 'buy', signalReason: `Dominant output (${(maxPct * 100).toFixed(0)}% of value) → accumulation` };
   }
 
   // Even split across many outputs → distribution/sell
   if (outputs >= 4) {
-    const values = vouts.map((v: any) => v.value || 0).filter((v: number) => v > 0);
     const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
     const variance = values.reduce((s: number, v: number) => s + Math.pow(v - avg, 2), 0) / values.length;
-    const cv = Math.sqrt(variance) / avg; // coefficient of variation
+    const cv = avg > 0 ? Math.sqrt(variance) / avg : 0;
     if (cv < 0.5) {
-      return { signal: 'sell', signalReason: `Even distribution across ${outputs} outputs (CV: ${cv.toFixed(2)})` };
+      return { signal: 'sell', signalReason: `Even distribution across ${outputs} outputs` };
     }
+    return { signal: 'sell', signalReason: `Multi-output distribution: ${outputs} recipients` };
   }
 
-  return { signal: 'transfer', signalReason: `Standard transfer: ${inputs} in → ${outputs} out` };
+  // Fallback: more inputs than outputs = consolidation lean
+  if (inputs > outputs) {
+    return { signal: 'buy', signalReason: `Net consolidation: ${inputs} in → ${outputs} out` };
+  }
+
+  return { signal: 'sell', signalReason: `Net distribution: ${inputs} in → ${outputs} out` };
 }
 
 export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTransaction[]> {
@@ -258,8 +284,8 @@ export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTr
       feeRate: `${feeRate.toFixed(1)} sat/vB`,
       inputs: 0,
       outputs: 0,
-      signal: 'transfer',
-      signalReason: 'Pending mempool tx — pattern unknown',
+      signal: 'buy',
+      signalReason: 'Large pending tx (unconfirmed accumulation)',
     });
   }
 

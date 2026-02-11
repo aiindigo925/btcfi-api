@@ -75,14 +75,22 @@ export async function postWhaleToChannel(whale: {
   const fr = esc(whale.feeRate);
   const sig = whale.signal || 'transfer';
 
-  // Signal-based header
+  // Scale emoji count by BTC value:
+  // 10-50 BTC = 1, 50-100 = 2, 100-250 = 3, 250-500 = 4, 500-1000 = 5,
+  // 1000-2500 = 6, 2500-5000 = 7, 5000-10000 = 8, 10000-25000 = 9, 25000+ = 10
+  const btcVal = parseFloat(whale.totalValueBtc) || 0;
+  const scale = btcVal >= 25000 ? 10 : btcVal >= 10000 ? 9 : btcVal >= 5000 ? 8
+    : btcVal >= 2500 ? 7 : btcVal >= 1000 ? 6 : btcVal >= 500 ? 5
+    : btcVal >= 250 ? 4 : btcVal >= 100 ? 3 : btcVal >= 50 ? 2 : 1;
+
+  // Signal-based header with scaled emojis
   let header: string;
   if (sig === 'buy') {
-    header = '\ud83d\udfe2\ud83d\udfe2\ud83d\udfe2 *WHALE BUY* \ud83d\udfe2\ud83d\udfe2\ud83d\udfe2';
-  } else if (sig === 'sell') {
-    header = '\ud83d\udd34\ud83d\udd34\ud83d\udd34 *WHALE SELL* \ud83d\udd34\ud83d\udd34\ud83d\udd34';
+    const arrows = '\ud83d\udfe2'.repeat(scale);
+    header = arrows + ' *WHALE BUY* ' + arrows;
   } else {
-    header = '\ud83d\udc0b *WHALE TRANSFER* \ud83d\udc0b';
+    const arrows = '\ud83d\udd34'.repeat(scale);
+    header = arrows + ' *WHALE SELL* ' + arrows;
   }
 
   // Signal reason line
