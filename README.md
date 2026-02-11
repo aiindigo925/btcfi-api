@@ -2,7 +2,7 @@
 
 **Bitcoin Data & Intelligence for AI Agents**
 
-Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com)
+Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com) · [GitHub](https://github.com/aiindigo925/btcfi-api)
 
 ---
 

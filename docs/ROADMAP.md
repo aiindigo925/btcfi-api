@@ -3,6 +3,7 @@
 **Product:** BTCFi API — Bitcoin Data & Intelligence for AI Agents
 **Live at:** [btcfi.aiindigo.com](https://btcfi.aiindigo.com)
 **By:** [AI Indigo](https://aiindigo.com)
+**Source:** [GitHub](https://github.com/aiindigo925/btcfi-api)
 
 ---
 

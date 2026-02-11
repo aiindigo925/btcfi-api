@@ -97,4 +97,5 @@ PEAC Protocol provides cryptographic payment receipts — signed proofs binding 
 
 ---
 
+*Source: [github.com/aiindigo925/btcfi-api](https://github.com/aiindigo925/btcfi-api)*
 *All endpoints documented in [OpenAPI spec](https://btcfi.aiindigo.com/openapi.json).*

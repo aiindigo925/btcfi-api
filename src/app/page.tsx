@@ -211,7 +211,7 @@ Decentralized RPC via Whistle Network`}</div>
 
       {/* Footer */}
       <div style={css.footer}>
-        <p>Built by <a href="https://aiindigo.com" style={css.link}>AI Indigo</a> · No tokens · No subscriptions · Payment IS authentication</p>
+        <p>Built by <a href="https://aiindigo.com" style={css.link}>AI Indigo</a> · <a href="https://github.com/aiindigo925/btcfi-api" target="_blank" style={css.link}>GitHub</a> · No tokens · No subscriptions · Payment IS authentication</p>
         <p style={{ marginTop: '8px' }}>Powered by mempool.space · Solv Protocol · Whistle Network · PCEF/NLx402</p>
       </div>
     </div>
