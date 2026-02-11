@@ -159,7 +159,7 @@ Decentralized RPC via Whistle Network`}</div>
       {/* Human Tools */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Human Interfaces</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div style={css.card}>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
             <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Dashboard</div>
@@ -167,16 +167,22 @@ Decentralized RPC via Whistle Network`}</div>
             <a href="/dashboard" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open →</a>
           </div>
           <div style={css.card}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🧩</div>
-            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Chrome Extension</div>
-            <p style={css.desc}>Live BTC price badge, fee alerts, address inspector, whale notifications</p>
-            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>Coming to Chrome Web Store</span>
-          </div>
-          <div style={css.card}>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
             <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
             <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
             <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open @BTC_Fi_Bot →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🐋</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Whale Alerts Channel</div>
+            <p style={css.desc}>Real-time whale transaction alerts — auto-posted every 15 min with buy/sell signals</p>
+            <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Join @BTCFi_Whales →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🧩</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Chrome Extension</div>
+            <p style={css.desc}>Live BTC price badge, fee alerts, address inspector, whale notifications</p>
+            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>Coming to Chrome Web Store</span>
           </div>
         </div>
       </div>

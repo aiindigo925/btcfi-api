@@ -173,6 +173,8 @@ export async function getFeePredictions(hours: number = 6): Promise<{
 
 // ============ WHALE DETECTION ============
 
+export type WhaleSignal = 'buy' | 'sell' | 'transfer';
+
 export interface WhaleTransaction {
   txid: string;
   totalValueSats: number;
@@ -182,6 +184,52 @@ export interface WhaleTransaction {
   feeRate: string;
   inputs: number;
   outputs: number;
+  signal: WhaleSignal;
+  signalReason: string;
+}
+
+/**
+ * Classify whale tx as buy/sell/transfer based on I/O patterns.
+ * - Many inputs → few outputs: consolidation → accumulation (BUY)
+ * - Few inputs → many outputs: fan-out → distribution (SELL)
+ * - 1-2 outputs with one dominant: simple transfer
+ */
+function classifyWhaleSignal(
+  inputs: number,
+  outputs: number,
+  vouts: any[],
+  totalOut: number
+): { signal: WhaleSignal; signalReason: string } {
+  // Fan-out: few inputs, many outputs → distribution/sell
+  if (inputs <= 3 && outputs >= 5) {
+    return { signal: 'sell', signalReason: `Distribution: ${inputs} inputs → ${outputs} outputs (fan-out)` };
+  }
+
+  // Consolidation: many inputs, few outputs → accumulation/buy
+  if (inputs >= 5 && outputs <= 3) {
+    return { signal: 'buy', signalReason: `Consolidation: ${inputs} inputs → ${outputs} outputs (accumulation)` };
+  }
+
+  // Check output concentration — if one output holds >80% of value → likely transfer to cold wallet (buy/hold)
+  if (vouts.length >= 2) {
+    const maxOut = Math.max(...vouts.map((v: any) => v.value || 0));
+    if (maxOut / totalOut > 0.8) {
+      return { signal: 'buy', signalReason: `Single dominant output (${(maxOut / totalOut * 100).toFixed(0)}% of value) → cold storage accumulation` };
+    }
+  }
+
+  // Even split across many outputs → distribution/sell
+  if (outputs >= 4) {
+    const values = vouts.map((v: any) => v.value || 0).filter((v: number) => v > 0);
+    const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+    const variance = values.reduce((s: number, v: number) => s + Math.pow(v - avg, 2), 0) / values.length;
+    const cv = Math.sqrt(variance) / avg; // coefficient of variation
+    if (cv < 0.5) {
+      return { signal: 'sell', signalReason: `Even distribution across ${outputs} outputs (CV: ${cv.toFixed(2)})` };
+    }
+  }
+
+  return { signal: 'transfer', signalReason: `Standard transfer: ${inputs} in → ${outputs} out` };
 }
 
 export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTransaction[]> {
@@ -210,6 +258,8 @@ export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTr
       feeRate: `${feeRate.toFixed(1)} sat/vB`,
       inputs: 0,
       outputs: 0,
+      signal: 'transfer',
+      signalReason: 'Pending mempool tx — pattern unknown',
     });
   }
 
@@ -222,10 +272,19 @@ export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTr
         const blockTxs: any[] = await res.json();
         for (const tx of blockTxs) {
           if (seen.has(tx.txid)) continue;
-          const totalOut = (tx.vout || []).reduce((s: number, v: any) => s + (v.value || 0), 0);
+          const vouts: any[] = tx.vout || [];
+          const totalOut = vouts.reduce((s: number, v: any) => s + (v.value || 0), 0);
           if (totalOut < minSats) continue;
           seen.add(tx.txid);
           const feeRate = tx.weight ? (tx.fee / tx.weight * 4) : 0;
+          const ins = (tx.vin || []).length;
+          const outs = vouts.length;
+
+          // Buy/sell heuristic based on I/O pattern:
+          // Many inputs → few outputs = consolidation = accumulation/buy
+          // Few inputs → many outputs = distribution = sell/payout
+          const { signal, signalReason } = classifyWhaleSignal(ins, outs, vouts, totalOut);
+
           whales.push({
             txid: tx.txid,
             totalValueSats: totalOut,
@@ -233,8 +292,10 @@ export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTr
             totalValueUsd: (totalOut / 1e8 * price.USD).toFixed(2),
             fee: tx.fee || 0,
             feeRate: `${feeRate.toFixed(1)} sat/vB`,
-            inputs: (tx.vin || []).length,
-            outputs: (tx.vout || []).length,
+            inputs: ins,
+            outputs: outs,
+            signal,
+            signalReason,
           });
         }
       }
