@@ -194,21 +194,22 @@ export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTr
 
   return recent
     .filter((tx: any) => {
-      const totalOut = (tx.vout || []).reduce((s: number, v: any) => s + (v.value || 0), 0);
-      return totalOut >= minSats;
+      // mempool/recent returns flat { txid, fee, vsize, value }
+      const val = tx.value || 0;
+      return val >= minSats;
     })
     .map((tx: any) => {
-      const totalOut = (tx.vout || []).reduce((s: number, v: any) => s + (v.value || 0), 0);
-      const feeRate = tx.weight ? (tx.fee / tx.weight * 4) : 0;
+      const val = tx.value || 0;
+      const feeRate = tx.vsize ? (tx.fee / tx.vsize) : 0;
       return {
         txid: tx.txid,
-        totalValueSats: totalOut,
-        totalValueBtc: (totalOut / 1e8).toFixed(8),
-        totalValueUsd: (totalOut / 1e8 * price.USD).toFixed(2),
+        totalValueSats: val,
+        totalValueBtc: (val / 1e8).toFixed(8),
+        totalValueUsd: (val / 1e8 * price.USD).toFixed(2),
         fee: tx.fee,
         feeRate: `${feeRate.toFixed(1)} sat/vB`,
-        inputs: (tx.vin || []).length,
-        outputs: (tx.vout || []).length,
+        inputs: 0,
+        outputs: 0,
       };
     })
     .sort((a: WhaleTransaction, b: WhaleTransaction) => b.totalValueSats - a.totalValueSats);

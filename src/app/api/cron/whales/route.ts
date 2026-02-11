@@ -10,7 +10,7 @@ import { getRedis } from '@/lib/redis';
 import { postWhaleToChannel } from '@/lib/telegram-bot';
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
-const MIN_BTC = 10; // Minimum BTC to alert
+const DEFAULT_MIN_BTC = 10; // Minimum BTC to alert
 const DEDUP_TTL = 86400; // 24h TTL for seen txids
 
 export async function GET(request: NextRequest) {
@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const whales = await getWhaleTransactions(MIN_BTC);
+    // Allow ?min=N for testing, default to 10 BTC
+    const { searchParams } = new URL(request.url);
+    const minBtc = parseFloat(searchParams.get('min') || '') || DEFAULT_MIN_BTC;
+    const whales = await getWhaleTransactions(minBtc);
     if (!whales.length) {
       return NextResponse.json({ success: true, posted: 0, message: 'No whales found' });
     }
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
       success: true,
       checked: whales.length,
       posted,
-      threshold: `${MIN_BTC} BTC`,
+      threshold: `${minBtc} BTC`,
     });
   } catch (err) {
     console.error('Whale cron error:', err);
