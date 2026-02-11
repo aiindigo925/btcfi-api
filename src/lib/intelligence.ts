@@ -185,34 +185,63 @@ export interface WhaleTransaction {
 }
 
 export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTransaction[]> {
-  const [recent, price] = await Promise.all([
+  const [recent, price, blocks] = await Promise.all([
     getMempoolRecent(),
     getBtcPrice(),
+    getLatestBlocks(1),
   ]);
 
   const minSats = minBtc * 1e8;
+  const seen = new Set<string>();
+  const whales: WhaleTransaction[] = [];
 
-  return recent
-    .filter((tx: any) => {
-      // mempool/recent returns flat { txid, fee, vsize, value }
-      const val = tx.value || 0;
-      return val >= minSats;
-    })
-    .map((tx: any) => {
-      const val = tx.value || 0;
-      const feeRate = tx.vsize ? (tx.fee / tx.vsize) : 0;
-      return {
-        txid: tx.txid,
-        totalValueSats: val,
-        totalValueBtc: (val / 1e8).toFixed(8),
-        totalValueUsd: (val / 1e8 * price.USD).toFixed(2),
-        fee: tx.fee,
-        feeRate: `${feeRate.toFixed(1)} sat/vB`,
-        inputs: 0,
-        outputs: 0,
-      };
-    })
-    .sort((a: WhaleTransaction, b: WhaleTransaction) => b.totalValueSats - a.totalValueSats);
+  // Source 1: Pending mempool txs (flat format: { txid, fee, vsize, value })
+  for (const tx of recent) {
+    const val = tx.value || 0;
+    if (val < minSats || seen.has(tx.txid)) continue;
+    seen.add(tx.txid);
+    const feeRate = tx.vsize ? (tx.fee / tx.vsize) : 0;
+    whales.push({
+      txid: tx.txid,
+      totalValueSats: val,
+      totalValueBtc: (val / 1e8).toFixed(8),
+      totalValueUsd: (val / 1e8 * price.USD).toFixed(2),
+      fee: tx.fee,
+      feeRate: `${feeRate.toFixed(1)} sat/vB`,
+      inputs: 0,
+      outputs: 0,
+    });
+  }
+
+  // Source 2: Latest block txs (full format with vout[])
+  if (blocks.length > 0) {
+    try {
+      const blockHash = blocks[0].id;
+      const res = await fetch(`https://mempool.space/api/block/${blockHash}/txs/0`);
+      if (res.ok) {
+        const blockTxs: any[] = await res.json();
+        for (const tx of blockTxs) {
+          if (seen.has(tx.txid)) continue;
+          const totalOut = (tx.vout || []).reduce((s: number, v: any) => s + (v.value || 0), 0);
+          if (totalOut < minSats) continue;
+          seen.add(tx.txid);
+          const feeRate = tx.weight ? (tx.fee / tx.weight * 4) : 0;
+          whales.push({
+            txid: tx.txid,
+            totalValueSats: totalOut,
+            totalValueBtc: (totalOut / 1e8).toFixed(8),
+            totalValueUsd: (totalOut / 1e8 * price.USD).toFixed(2),
+            fee: tx.fee || 0,
+            feeRate: `${feeRate.toFixed(1)} sat/vB`,
+            inputs: (tx.vin || []).length,
+            outputs: (tx.vout || []).length,
+          });
+        }
+      }
+    } catch { /* block fetch failed, continue with mempool data */ }
+  }
+
+  return whales.sort((a, b) => b.totalValueSats - a.totalValueSats);
 }
 
 // ============ ADDRESS RISK SCORING ============
