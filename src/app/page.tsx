@@ -156,6 +156,59 @@ Decentralized RPC via Whistle Network`}</div>
 # zk proofs, real-time streams`}</div>
       </div>
 
+      {/* Human Tools */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>Human Interfaces</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Dashboard</div>
+            <p style={css.desc}>Live overview, address lookup, whale watch, fee calculator</p>
+            <a href="/dashboard" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🧩</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Chrome Extension</div>
+            <p style={css.desc}>Live BTC price badge, fee alerts, address inspector, whale notifications</p>
+            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>Coming to Chrome Web Store</span>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
+            <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
+            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>@BTCFiBot</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Developer Tools */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>Developer Tools</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <a href="/api/docs" style={{ ...css.card, textDecoration: 'none' }}>
+            <div style={{ color: '#4ade80', fontSize: '13px', fontWeight: 600 }}>📖 Interactive Docs</div>
+            <p style={{ ...css.desc, marginTop: '4px' }}>OpenAPI 3.1 + Swagger UI</p>
+          </a>
+          <a href="https://www.npmjs.com/package/@aiindigo/btcfi" style={{ ...css.card, textDecoration: 'none' }} target="_blank">
+            <div style={{ color: '#f7931a', fontSize: '13px', fontWeight: 600 }}>📦 SDK</div>
+            <p style={{ ...css.desc, marginTop: '4px' }}>npm i @aiindigo/btcfi — 28 methods</p>
+          </a>
+          <a href="https://www.npmjs.com/package/@aiindigo/btcfi-mcp" style={{ ...css.card, textDecoration: 'none' }} target="_blank">
+            <div style={{ color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}>🔧 MCP Server</div>
+            <p style={{ ...css.desc, marginTop: '4px' }}>npx @aiindigo/btcfi-mcp — 27 tools</p>
+          </a>
+        </div>
+      </div>
+
+      {/* Protocols */}
+      <div style={css.section}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const }}>
+          <a href="https://x402.org" target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>Powered by <span style={{ color: '#f7931a', fontWeight: 600 }}>x402</span></a>
+          <a href="/.well-known/peac.txt" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>PEAC Protocol <span style={{ color: '#4ade80' }}>✓</span></a>
+          <a href="/.well-known/x402-discovery.json" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>x402 V2 Discovery <span style={{ color: '#4ade80' }}>✓</span></a>
+        </div>
+      </div>
+
       {/* Footer */}
       <div style={css.footer}>
         <p>Built by <a href="https://aiindigo.com" style={css.link}>AI Indigo</a> · No tokens · No subscriptions · Payment IS authentication</p>

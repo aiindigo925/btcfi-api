@@ -1,6 +1,12 @@
 {
   "framework": "nextjs",
   "regions": ["iad1", "sfo1"],
+  "crons": [
+    {
+      "path": "/api/cron/health",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

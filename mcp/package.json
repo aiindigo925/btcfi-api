@@ -1,39 +1,39 @@
 {
   "name": "@aiindigo/btcfi-mcp",
-  "version": "1.0.0",
-  "description": "MCP server for BTCFi API — Bitcoin + BTCFi data for AI agents via x402 micropayments",
+  "version": "3.0.0",
+  "description": "MCP server for BTCFi API — 27 tools for Bitcoin data, intelligence, security, Solv Protocol, and ZK proofs with x402 auto-payment",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "btcfi-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "server.json"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/index.ts --format cjs --dts --clean --banner.js \"#!/usr/bin/env node\"",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "btcfi", "bitcoin", "mcp", "x402", "ai-agent", "claude",
-    "model-context-protocol", "solv-protocol", "micropayments"
+    "mcp", "model-context-protocol", "bitcoin", "btcfi", "x402",
+    "ai-agents", "claude", "openai", "solv-protocol", "zk-proofs"
   ],
-  "author": "AI Indigo <contact@aiindigo.com>",
+  "author": "AI Indigo <ai@aiindigo.com>",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/aiindigo/btcfi-api"
-  },
+  "repository": { "type": "git", "url": "https://github.com/aiindigo/btcfi" },
+  "homepage": "https://btcfi.aiindigo.com",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.0.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.5.0"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ]
+  "engines": { "node": ">=18" }
 }

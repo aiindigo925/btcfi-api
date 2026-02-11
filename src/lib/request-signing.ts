@@ -188,7 +188,7 @@ async function verifySecp256k1(
     // Without ethers.js, we do structural validation of the signature components
     // For full ecrecover, dynamic import ethers if available
     try {
-      const { ethers } = await import('ethers' as string);
+      const { ethers } = await import('ethers');
       const recovered = ethers.verifyMessage(message, '0x' + sig);
       return recovered.toLowerCase() === address.toLowerCase();
     } catch {
@@ -256,13 +256,25 @@ export async function verifyRequestSignature(
 }
 
 /**
- * Get rate limit for a request based on headers
+ * Get rate limit for a request based on headers.
+ * Note: "signed" tier requires all 4 signing headers present.
+ * Full crypto verification happens async and is too expensive for every rate-limit check.
+ * The middleware should call verifyRequestSignature() for high-value endpoints.
  */
 export function getRateLimitTier(headers: Headers): SignerTier {
   // Paid requests (x402) → unlimited
   if (headers.get('X-Payment') || headers.get('x-payment')) return 'paid';
-  // Signed requests → higher limit
-  if (headers.get('X-Signature') || headers.get('x-signature')) return 'signed';
+  // Signed requests → higher limit (require all 4 headers to prevent trivial spoofing)
+  const sig = headers.get('X-Signature') || headers.get('x-signature');
+  const nonce = headers.get('X-Nonce') || headers.get('x-nonce');
+  const signer = headers.get('X-Signer') || headers.get('x-signer');
+  const ts = headers.get('X-Timestamp') || headers.get('x-timestamp');
+  if (sig && nonce && signer && ts) {
+    // Basic structural checks (full crypto verification is async)
+    if (sig.length >= 64 && nonce.length >= 8 && signer.length >= 32) {
+      return 'signed';
+    }
+  }
   // Default → free
   return 'free';
 }

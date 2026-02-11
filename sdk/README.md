@@ -1,6 +1,6 @@
 # @aiindigo/btcfi
 
-TypeScript SDK for BTCFi API — Bitcoin + BTCFi data for AI agents via x402 micropayments.
+TypeScript SDK for the [BTCFi API](https://btcfi.aiindigo.com) — Bitcoin data, intelligence, security, Solv Protocol, and ZK proofs via x402 micropayments.
 
 ## Install
 
@@ -10,139 +10,109 @@ npm install @aiindigo/btcfi
 
 ## Quick Start
 
-```typescript
+```ts
 import { BTCFi } from '@aiindigo/btcfi';
 
 const btcfi = new BTCFi();
 
-// Get current fees
+// Free endpoints
+const health = await btcfi.getHealth();
+
+// Paid endpoints (returns 402 PaymentRequiredError without payment)
 const fees = await btcfi.getFees();
-console.log(fees.fees.recommended);
 
-// Get Solv Protocol reserves
-const reserves = await btcfi.getSolvReserves();
-console.log(reserves.data.totalSolvBTC);
-
-// Threat analysis
-const threat = await btcfi.getThreatAnalysis('bc1q...');
-console.log(threat.data.overallRisk);
-```
-
-## Configuration
-
-```typescript
-const btcfi = new BTCFi({
-  baseUrl: 'https://btcfi.aiindigo.com', // default
-  paymentNetwork: 'base',                // 'base' or 'solana'
-  timeout: 30000,                        // ms
-  retries: 2,                            // auto-retry on failure
-  paymentHeaders: {                      // x402 payment proof
-    'X-Payment': '<proof>',
-  },
+// Auto-pay with private key
+const btcfiPaid = new BTCFi({
+  evmPrivateKey: process.env.EVM_PRIVATE_KEY,  // Base USDC
+  // OR
+  svmPrivateKey: process.env.SVM_PRIVATE_KEY,  // Solana USDC
 });
+const whales = await btcfiPaid.getWhaleAlerts();
 ```
 
-## Methods
+## 28 Methods
 
-### Core Bitcoin
-| Method | Description | Price |
-|--------|-------------|-------|
-| `getFees()` | Recommended fee rates + USD estimates | $0.01 |
-| `getMempool()` | Mempool summary + recent txs | $0.01 |
-| `getAddress(addr)` | Address balance + stats | $0.01 |
-| `getUtxos(addr)` | Unspent outputs | $0.01 |
-| `getAddressTxs(addr)` | Transaction history | $0.01 |
-| `getTx(txid)` | Transaction details | $0.01 |
-| `getTxStatus(txid)` | Confirmation status | $0.01 |
-| `broadcastTx(txHex)` | Broadcast signed tx | $0.05 |
-| `getBlock(id)` | Block by height or hash | $0.01 |
-| `getLatestBlocks(limit)` | Recent blocks | $0.01 |
+### Core
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `getFees()` | GET /api/v1/fees | $0.01 |
+| `getMempool()` | GET /api/v1/mempool | $0.01 |
+| `getAddress(addr)` | GET /api/v1/address/:addr | $0.01 |
+| `getUtxos(addr)` | GET /api/v1/address/:addr/utxos | $0.01 |
+| `getAddressTxs(addr)` | GET /api/v1/address/:addr/txs | $0.01 |
+| `getTx(txid)` | GET /api/v1/tx/:txid | $0.01 |
+| `getTxStatus(txid)` | GET /api/v1/tx/:txid/status | $0.01 |
+| `broadcastTx(hex)` | POST /api/v1/tx/broadcast | $0.05 |
+| `getBlock(id)` | GET /api/v1/block/:id | $0.01 |
+| `getLatestBlocks(n)` | GET /api/v1/block/latest | $0.01 |
 
 ### Intelligence
-| Method | Description | Price |
-|--------|-------------|-------|
-| `getFeePrediction()` | AI fee prediction (1h/6h/24h) | $0.02 |
-| `getWhaleAlerts()` | Large tx detection | $0.02 |
-| `getAddressRisk(addr)` | Address risk scoring | $0.02 |
-| `getNetworkHealth()` | Network health analysis | $0.02 |
-| `getConsolidationAdvice(addr)` | UTXO consolidation advice | $0.02 |
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `getConsolidationAdvice(addr)` | GET /api/v1/intelligence/consolidate/:addr | $0.02 |
+| `getFeePrediction()` | GET /api/v1/intelligence/fees | $0.02 |
+| `getWhaleAlerts()` | GET /api/v1/intelligence/whales | $0.02 |
+| `getAddressRisk(addr)` | GET /api/v1/intelligence/risk/:addr | $0.02 |
+| `getNetworkHealth()` | GET /api/v1/intelligence/network | $0.02 |
 
 ### Security
-| Method | Description | Price |
-|--------|-------------|-------|
-| `getThreatAnalysis(addr)` | YARA-pattern threat analysis | $0.02 |
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `getThreatAnalysis(addr)` | GET /api/v1/security/threat/:addr | $0.02 |
 
-### Solv Protocol (BTCFi)
-| Method | Description | Price |
-|--------|-------------|-------|
-| `getSolvReserves()` | SolvBTC supply + chain breakdown + TVL | $0.02 |
-| `getSolvYield()` | xSolvBTC APY + yield strategies | $0.02 |
-| `getSolvLiquidity(chain?)` | Cross-chain liquidity distribution | $0.02 |
-| `getSolvRisk()` | Multi-factor risk assessment | $0.02 |
+### Solv Protocol
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `getSolvReserves()` | GET /api/v1/solv/reserves | $0.02 |
+| `getSolvYield()` | GET /api/v1/solv/yield | $0.02 |
+| `getSolvLiquidity(chain?)` | GET /api/v1/solv/liquidity | $0.02 |
+| `getSolvRisk()` | GET /api/v1/solv/risk | $0.02 |
 
 ### ZK Proofs
-| Method | Description | Price |
-|--------|-------------|-------|
-| `generateBalanceProof(addr, threshold, unit?)` | Prove balance ≥ threshold | $0.03 |
-| `generateAgeProof(addr, minBlocks)` | Prove UTXO age ≥ N blocks | $0.03 |
-| `generateMembershipProof(addr, setRoot, proof)` | Prove address in set | $0.03 |
-| `verifyProof(type, proof, publicInputs)` | Verify any ZK proof | $0.01 |
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `generateBalanceProof(addr, threshold, unit?)` | POST /api/v1/zk/balance-proof | $0.03 |
+| `generateAgeProof(addr, minBlocks)` | POST /api/v1/zk/age-proof | $0.03 |
+| `generateMembershipProof(addr, root, proof)` | POST /api/v1/zk/membership | $0.03 |
+| `verifyProof(type, proof, inputs)` | POST /api/v1/zk/verify | $0.01 |
 
-### Real-Time Streams
-| Method | Description | Price |
-|--------|-------------|-------|
-| `stream({ channel?, min? })` | SSE stream (blocks, fees, whales) | $0.01 |
-
-### System
-| Method | Description | Price |
-|--------|-------------|-------|
-| `getStakingStatus(addr?)` | Staking tier check | Free |
-| `getHealth()` | API + RPC health status | Free |
-| `getApiIndex()` | Full API index | Free |
-
-## Error Handling
-
-```typescript
-import { BTCFi, PaymentRequiredError, BTCFiError } from '@aiindigo/btcfi';
-
-try {
-  const fees = await btcfi.getFees();
-} catch (error) {
-  if (error instanceof PaymentRequiredError) {
-    // x402 payment needed
-    console.log(error.paymentRequirements);
-  } else if (error instanceof BTCFiError) {
-    console.log(error.statusCode, error.message);
-  }
-}
-```
+### Streams & System
+| Method | Endpoint | Price |
+|--------|----------|-------|
+| `stream({ channel, min })` | GET /api/v1/stream | $0.01 |
+| `getStakingStatus(addr?)` | GET /api/v1/staking/status | free |
+| `getHealth()` | GET /api/health | free |
+| `getApiIndex()` | GET /api/v1 | free |
 
 ## Payment Networks
 
 | Network | Facilitator | Fees |
-|---------|-------------|------|
-| Base (USDC) | Coinbase x402 | Zero (ERC-3009) |
-| Solana (USDC) | NLx402 by PCEF | Zero (nonprofit) |
+|---------|------------|------|
+| Base | Coinbase x402 (ERC-3009) | Zero |
+| Solana | NLx402 (PCEF nonprofit) | Zero |
 
-Set `X-Payment-Network: base` or `X-Payment-Network: solana` header.
+## Real-Time Streams
 
-## Examples
-
-See `examples/` directory for runnable agent scripts:
-
-```bash
-npx tsx examples/fee-optimizer.ts
-npx tsx examples/whale-watcher.ts
-npx tsx examples/solv-yield-monitor.ts
-npx tsx examples/threat-scanner.ts
-npx tsx examples/portfolio-risk.ts
-npx tsx examples/zk-trust-proof.ts
-npx tsx examples/realtime-whale-alert.ts
+```ts
+const es = btcfi.stream({ channel: 'whales', min: 100 });
+es.onmessage = (e) => console.log(JSON.parse(e.data));
+es.onerror = () => es.close();
 ```
 
-## Links
+## Error Handling
 
-- **API:** https://btcfi.aiindigo.com
-- **MCP Server:** `@aiindigo/btcfi-mcp`
-- **OpenAPI Spec:** https://btcfi.aiindigo.com/openapi.json
-- **Built by:** [AI Indigo](https://aiindigo.com)
+```ts
+import { BTCFi, PaymentRequiredError } from '@aiindigo/btcfi';
+
+try {
+  const fees = await btcfi.getFees();
+} catch (e) {
+  if (e instanceof PaymentRequiredError) {
+    console.log('Pay:', e.paymentRequirements);
+  }
+}
+```
+
+## License
+
+MIT — [AI Indigo](https://aiindigo.com)

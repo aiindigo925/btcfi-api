@@ -1,0 +1,31 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
+  "name": "btcfi",
+  "namespace": "com.aiindigo",
+  "display_name": "BTCFi — Bitcoin Data & Intelligence",
+  "description": "27 tools for Bitcoin data, intelligence, security, Solv Protocol, and ZK proofs with x402 micropayments.",
+  "version": "3.0.0",
+  "repository": "https://github.com/aiindigo/btcfi",
+  "homepage": "https://btcfi.aiindigo.com",
+  "license": "MIT",
+  "runtime": "node",
+  "install": { "npm": "@aiindigo/btcfi-mcp" },
+  "transport": "stdio",
+  "categories": ["finance", "blockchain", "security", "data"],
+  "tags": ["bitcoin", "btcfi", "x402", "micropayments", "solv-protocol", "zk-proofs", "mempool", "whale-alerts"],
+  "tools_count": 27,
+  "author": { "name": "AI Indigo", "url": "https://aiindigo.com", "email": "ai@aiindigo.com" },
+  "pricing": {
+    "model": "per-request",
+    "currency": "USDC",
+    "range": "$0.01–$0.05",
+    "free_tier": ["btcfi_health", "btcfi_api_index", "btcfi_staking_status"],
+    "payment_protocol": "x402"
+  },
+  "environment_variables": [
+    { "name": "BTCFI_API_URL", "description": "API base URL", "required": false, "default": "https://btcfi.aiindigo.com" },
+    { "name": "EVM_PRIVATE_KEY", "description": "EVM private key for Base USDC auto-payment", "required": false },
+    { "name": "SVM_PRIVATE_KEY", "description": "Solana private key for NLx402 auto-payment", "required": false },
+    { "name": "PAYMENT_NETWORK", "description": "Payment network: base or solana", "required": false, "default": "base" }
+  ]
+}

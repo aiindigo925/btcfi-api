@@ -1,279 +1,215 @@
 /**
- * BTCFi API Middleware — MP2 Unified
+ * BTCFi API Middleware — x402 Payment Enforcement, Rate Limiting, CORS, Security Headers
  *
- * All payment, rate limiting, security, and CORS handled here.
- * Routes no longer call withPayment() — middleware does it.
- *
- * Flow: CORS → Rate Limit → x402 Payment → Route Handler
+ * This is the critical enforcement layer that:
+ * 1. Adds CORS headers to all API responses
+ * 2. Adds security headers
+ * 3. Checks x402 payment for paid endpoints (when X402_ENABLED=true)
+ * 4. Applies rate limiting by tier (free/signed/paid/staked)
+ * 5. Records payments for revenue tracking
+ * 6. Handles encrypted response setup
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { checkPayment, detectNetwork, getPriceForPath } from '@/lib/x402';
+import { checkPayment, getPriceForPath, detectNetwork } from '@/lib/x402';
+import { getRateLimitTier, RATE_LIMITS, type SignerTier } from '@/lib/request-signing';
 import { recordPayment } from '@/lib/revenue';
-import { trackServerError } from '@/lib/monitoring';
+import { generatePEACReceipt } from '@/lib/peac';
 
-// ============ RATE LIMITING ============
+// ============ RATE LIMITING (IN-MEMORY) ============
 
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-  violations: number;
-}
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const WINDOW_MS = 60_000; // 1 minute
 
-const rateLimitMap = new Map<string, RateLimitEntry>();
-const RATE_WINDOW = 60 * 1000;
+function checkRateLimit(ip: string, tier: SignerTier): { allowed: boolean; remaining: number; resetAt: number } {
+  const limit = RATE_LIMITS[tier];
+  if (limit === Infinity) return { allowed: true, remaining: Infinity, resetAt: 0 };
 
-// KV-backed rate limiting (Task 17.5)
-let kvAvailable: boolean | null = null;
-let kvModule: any = null;
-
-async function getRateLimitKV(): Promise<any> {
-  if (kvAvailable === false) return null;
-  if (kvModule) return kvModule;
-  try {
-    const { Redis } = await import('@upstash/redis' as string);
-    kvModule = Redis.fromEnv();
-    kvAvailable = true;
-    return kvModule;
-  } catch {
-    kvAvailable = false;
-    return null;
-  }
-}
-
-async function kvIncr(key: string, windowSec: number): Promise<number | null> {
-  const kv = await getRateLimitKV();
-  if (!kv) return null;
-  try {
-    const count = await kv.incr(key);
-    if (count === 1) await kv.expire(key, windowSec);
-    return count as number;
-  } catch { return null; }
-}
-
-const TIER_LIMITS: Record<string, number> = {
-  free: 100,
-  signed: 500,
-  paid: 999999,
-  staked: 999999,
-};
-
-function getRateLimitKey(request: NextRequest): string {
-  const ip = request.headers.get('x-forwarded-for')
-    || request.headers.get('x-real-ip')
-    || 'unknown';
-  const ua = (request.headers.get('user-agent') || 'none').slice(0, 50);
-  return `${ip}:${ua}`;
-}
-
-function detectTier(request: NextRequest): string {
-  if (request.headers.get('X-Payment') || request.headers.get('x-payment')) return 'paid';
-  if (request.headers.get('X-Staker') || request.headers.get('x-staker')) return 'staked';
-  if (request.headers.get('X-Signature') || request.headers.get('x-signature')) return 'signed';
-  return 'free';
-}
-
-function checkRateLimit(key: string, tier: string): {
-  limited: boolean;
-  remaining: number;
-  limit: number;
-  retryAfter?: number;
-} {
   const now = Date.now();
-  const limit = TIER_LIMITS[tier] || TIER_LIMITS.free;
-  const entry = rateLimitMap.get(key);
+  const key = `${tier}:${ip}`;
+  const entry = rateLimitStore.get(key);
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW, violations: entry?.violations || 0 });
-    return { limited: false, remaining: limit - 1, limit };
+  if (!entry || now >= entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return { allowed: true, remaining: limit - 1, resetAt: now + WINDOW_MS };
   }
 
   entry.count++;
-  const remaining = Math.max(0, limit - entry.count);
+  const allowed = entry.count <= limit;
+  return { allowed, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
+}
 
-  if (entry.count > limit) {
-    entry.violations++;
-    const backoff = Math.min(300, 60 * Math.pow(2, entry.violations - 1));
-    return { limited: true, remaining: 0, limit, retryAfter: backoff };
+// Periodic cleanup (every 5 min, clear expired entries)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    if (now >= entry.resetAt + WINDOW_MS) rateLimitStore.delete(key);
   }
+}, 300_000);
 
-  return { limited: false, remaining, limit };
-}
+// ============ CORS & SECURITY HEADERS ============
 
-// Cleanup stale entries every 5 minutes
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of rateLimitMap) {
-      if (now - entry.resetAt > 600_000) rateLimitMap.delete(key);
-    }
-  }, 300_000);
-}
-
-// ============ SECURITY HEADERS ============
-
-const SECURITY_HEADERS: Record<string, string> = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
-};
-
-function applySecurityHeaders(response: NextResponse): void {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(key, value);
-  }
-}
-
-// ============ CORS ============
-
-const CORS_HEADERS: Record<string, string> = {
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': [
-    'Content-Type',
-    'X-Payment', 'x-payment',
-    'X-Payment-Network', 'x-payment-network',
-    'X-Signature', 'x-signature',
-    'X-Nonce', 'x-nonce',
-    'X-Signer', 'x-signer',
-    'X-Timestamp', 'x-timestamp',
-    'X-Staker', 'x-staker',
-    'X-Encrypt-Response', 'x-encrypt-response',
-    'Authorization',
-  ].join(', '),
+  'Access-Control-Allow-Headers': 'Content-Type, X-Payment, X-Payment-Network, X-Signature, X-Nonce, X-Signer, X-Timestamp, X-Encrypt-Response, X-Staker, Authorization',
+  'Access-Control-Expose-Headers': 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Payment-Required, X-Payment-Amount, X-Payment-Currency, X-Payment-Networks, X-PEAC-Receipt',
   'Access-Control-Max-Age': '86400',
 };
 
-function applyCorsHeaders(response: NextResponse): void {
-  for (const [k, v] of Object.entries(CORS_HEADERS)) {
-    response.headers.set(k, v);
-  }
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Powered-By': 'BTCFi API v3.0.0',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://btcfi.aiindigo.com;",
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+
+// ============ PATH MATCHING ============
+
+/** Paths that skip x402 payment entirely */
+const FREE_PATHS = [
+  '/api/health',
+  '/api/v1',
+  '/api/v1/staking',
+  '/api/v1/payment-test',
+  '/api/admin',
+  '/api/newsletter',
+  '/api/docs',
+  '/api/cron',
+  '/api/telegram',
+];
+
+/** Paths that don't go through middleware at all */
+const SKIP_PATHS = [
+  '/_next',
+  '/favicon.ico',
+  '/openapi.json',
+  '/.well-known',
+];
+
+function isApiPath(pathname: string): boolean {
+  return pathname.startsWith('/api/');
 }
 
-// ============ CACHE POLICY (Task 17.6) ============
+function isFreePath(pathname: string): boolean {
+  return FREE_PATHS.some(p => pathname.startsWith(p));
+}
 
-function getCachePolicy(pathname: string): string | null {
-  // No caching for personalized/dynamic endpoints
-  if (pathname.includes('/intelligence/') || pathname.includes('/security/')) return 'no-store';
-  if (pathname.includes('/zk/')) return 'no-store';
-  if (pathname.includes('/stream')) return 'no-store';
-  // Fees/mempool: fast-changing, short TTL
-  if (pathname.includes('/fees') || pathname.includes('/mempool')) return 'public, max-age=10, stale-while-revalidate=20';
-  // Block data: moderate TTL
-  if (pathname.includes('/block/')) return 'public, max-age=60, stale-while-revalidate=120';
-  // Solv data: cached in lib already, match at HTTP level
-  if (pathname.includes('/solv/')) return 'public, max-age=60, stale-while-revalidate=120';
-  // Address data: short TTL (balances change)
-  if (pathname.includes('/address/')) return 'public, max-age=15, stale-while-revalidate=30';
-  // Transaction data: immutable once confirmed
-  if (pathname.includes('/tx/') && !pathname.includes('/broadcast')) return 'public, max-age=300, stale-while-revalidate=600';
-  // Staking/health/index: moderate
-  if (pathname.includes('/staking/') || pathname.includes('/health')) return 'public, max-age=30, stale-while-revalidate=60';
-  // Broadcast: never cache writes
-  if (pathname.includes('/broadcast')) return 'no-store';
-  // Admin: never cache
-  if (pathname.includes('/admin/')) return 'no-store';
-  return null;
+function shouldSkip(pathname: string): boolean {
+  return SKIP_PATHS.some(p => pathname.startsWith(p));
 }
 
 // ============ MIDDLEWARE ============
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const pathname = request.nextUrl.pathname;
 
-  // Only apply to API routes
-  if (!pathname.startsWith('/api/')) {
+  // Skip static assets and non-API paths
+  if (shouldSkip(pathname)) return NextResponse.next();
+
+  // Dashboard and docs pages — pass through
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/docs') || pathname === '/') {
     return NextResponse.next();
   }
 
   // CORS preflight
   if (request.method === 'OPTIONS') {
-    const response = new NextResponse(null, { status: 204 });
-    applyCorsHeaders(response);
-    applySecurityHeaders(response);
-    return response;
+    return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  // Detect tier
-  const tier = detectTier(request);
-  const key = getRateLimitKey(request);
+  // Only apply payment/rate-limit logic to API routes
+  if (!isApiPath(pathname)) return NextResponse.next();
 
-  // Rate limit check (paid/staked skip)
-  if (tier === 'free' || tier === 'signed') {
-    // Try KV-backed rate limit first (survives cold starts)
-    const kvKey = `rl:${tier}:${key.replace(/[^a-zA-Z0-9.:]/g, '_').slice(0, 100)}`;
-    const kvCount = await kvIncr(kvKey, 60);
-    const { limited, remaining, limit, retryAfter } = kvCount !== null
-      ? { limited: kvCount > (TIER_LIMITS[tier] || 100), remaining: Math.max(0, (TIER_LIMITS[tier] || 100) - kvCount), limit: TIER_LIMITS[tier] || 100, retryAfter: 60 }
-      : checkRateLimit(key, tier);
+  // Get client IP for rate limiting
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || '0.0.0.0';
 
-    if (limited) {
-      const response = NextResponse.json(
-        {
-          success: false,
-          error: 'Rate limit exceeded',
-          code: 'RATE_LIMITED',
-          tier,
-          limit,
-          retryAfter: retryAfter || 60,
-          upgrade: {
-            payment: 'Add X-Payment header with x402 proof for unlimited',
-            staking: 'Stake USDC for unlimited + priority. See /api/v1/staking/status',
-          },
+  // Determine tier
+  const tier = getRateLimitTier(request.headers);
+  const network = detectNetwork(request);
+
+  // Rate limit check
+  const rateResult = checkRateLimit(ip, tier);
+  if (!rateResult.allowed) {
+    return NextResponse.json(
+      {
+        error: 'Rate limit exceeded',
+        code: 429,
+        tier,
+        limit: RATE_LIMITS[tier],
+        resetAt: new Date(rateResult.resetAt).toISOString(),
+        upgrade: tier === 'free'
+          ? 'Sign requests with wallet for 500/min, or use x402 payment for unlimited'
+          : undefined,
+      },
+      {
+        status: 429,
+        headers: {
+          ...CORS_HEADERS,
+          ...SECURITY_HEADERS,
+          'X-RateLimit-Limit': String(RATE_LIMITS[tier]),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(Math.ceil(rateResult.resetAt / 1000)),
+          'Retry-After': String(Math.ceil((rateResult.resetAt - Date.now()) / 1000)),
         },
-        { status: 429 }
-      );
-      response.headers.set('Retry-After', (retryAfter || 60).toString());
-      applyCorsHeaders(response);
-      applySecurityHeaders(response);
-      return response;
+      }
+    );
+  }
+
+  // x402 payment check for paid endpoints
+  if (!isFreePath(pathname)) {
+    const paymentResponse = await checkPayment(request);
+    if (paymentResponse) {
+      // Add CORS headers to 402 response
+      Object.entries(CORS_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
+      Object.entries(SECURITY_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
+      return paymentResponse;
+    }
+
+    // Payment valid — record it
+    if (request.headers.get('X-Payment') || request.headers.get('x-payment')) {
+      recordPayment(network, pathname);
     }
   }
 
-  // x402 payment check (handled at middleware level — routes don't need withPayment)
-  const paymentResponse = await checkPayment(request);
-  if (paymentResponse) {
-    applyCorsHeaders(paymentResponse);
-    applySecurityHeaders(paymentResponse);
-    return paymentResponse;
-  }
-
-  // Record successful paid request
-  if (tier === 'paid') {
-    recordPayment(detectNetwork(request), pathname);
-  }
-
-  // All clear — continue to route
+  // Pass through to route handler, then add headers to response
   const response = NextResponse.next();
 
-  // Cache-Control per endpoint tier (Task 17.6)
-  const cachePolicy = getCachePolicy(pathname);
-  if (cachePolicy) {
-    response.headers.set('Cache-Control', cachePolicy);
-  }
+  // Add standard headers
+  Object.entries(CORS_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+  Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
 
   // Rate limit headers
-  if (tier === 'free' || tier === 'signed') {
-    const limit = TIER_LIMITS[tier];
-    const entry = rateLimitMap.get(key);
-    const remaining = entry ? Math.max(0, limit - entry.count) : limit;
-    response.headers.set('X-RateLimit-Limit', limit.toString());
-    response.headers.set('X-RateLimit-Remaining', remaining.toString());
-  } else {
-    response.headers.set('X-RateLimit-Limit', 'unlimited');
+  response.headers.set('X-RateLimit-Limit', String(RATE_LIMITS[tier] === Infinity ? 'unlimited' : RATE_LIMITS[tier]));
+  response.headers.set('X-RateLimit-Remaining', String(rateResult.remaining === Infinity ? 'unlimited' : rateResult.remaining));
+  if (rateResult.resetAt > 0) {
+    response.headers.set('X-RateLimit-Reset', String(Math.ceil(rateResult.resetAt / 1000)));
   }
-  response.headers.set('X-RateLimit-Tier', tier);
-  response.headers.set('X-Paid', tier === 'paid' ? 'true' : 'false');
 
-  applyCorsHeaders(response);
-  applySecurityHeaders(response);
+  // PEAC receipt for paid requests
+  if ((request.headers.get('X-Payment') || request.headers.get('x-payment')) && !isFreePath(pathname)) {
+    try {
+      const price = getPriceForPath(pathname);
+      const amount = Math.floor(price * 1_000_000).toString();
+      const receipt = generatePEACReceipt(pathname, amount, network, '');
+      response.headers.set('X-PEAC-Receipt', receipt);
+    } catch {}
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    /*
+     * Match all paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 };

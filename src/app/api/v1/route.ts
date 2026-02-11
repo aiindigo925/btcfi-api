@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
       version: '3.0.0',
       tagline: 'Bitcoin + BTCFi data for agents. No tokens. Just ship.',
       description: 'Agent-native Bitcoin data, intelligence, BTCFi, security, ZK proofs & real-time streams via x402 micropayments',
-      masterplan: 'MP0 ✅ | MP1 ✅ | MP2 ✅ | MP3 ✅',
+      masterplan: 'MP0 ✅ | MP1 ✅ | MP2 ✅ | MP3 ✅ | MP4 ✅',
+      docs: '/api/docs',
+      openapi: '/openapi.json',
+      dashboard: '/dashboard',
     },
     live: {
       blockHeight,
