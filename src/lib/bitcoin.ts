@@ -98,7 +98,8 @@ export async function getMempoolTxs(limit: number = 10): Promise<string[]> {
   return txids.slice(0, limit);
 }
 
-export async function getMempoolRecent(): Promise<Transaction[]> {
+/** mempool/recent returns simplified objects: { txid, fee, vsize, value } */
+export async function getMempoolRecent(): Promise<any[]> {
   const res = await fetch(`${MEMPOOL_API}/mempool/recent`);
   if (!res.ok) throw new Error('Failed to fetch recent mempool txs');
   return res.json();
