@@ -14,7 +14,7 @@
     "server.json"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs --dts --clean --banner.js \"#!/usr/bin/env node\"",
+    "build": "tsup",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "prepublishOnly": "npm run build"
@@ -25,7 +25,7 @@
   ],
   "author": "AI Indigo <ai@aiindigo.com>",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/aiindigo/btcfi" },
+  "repository": { "type": "git", "url": "https://github.com/aiindigo925/btcfi-api" },
   "homepage": "https://btcfi.aiindigo.com",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
