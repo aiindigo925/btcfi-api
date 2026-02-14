@@ -83,6 +83,7 @@ const FREE_PATHS = [
   '/api/cron',
   '/api/telegram',
   '/api/v1/safe',
+  '/api/mcp',
 ];
 
 /** Paths that don't go through middleware at all */

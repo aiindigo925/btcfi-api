@@ -174,23 +174,26 @@ Decentralized RPC via Whistle Network`}</div>
       {/* MCP */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>MCP Integration <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>27 tools</span></h2>
-        <div style={css.code}>{`# Claude Desktop — add to claude_desktop_config.json
+        <div style={css.code}>{`# Option 1: Hosted (zero-install, URL-based)
+{
+  "mcpServers": {
+    "btcfi": {
+      "url": "https://btcfi.aiindigo.com/api/mcp",
+      "transport": "streamable-http"
+    }
+  }
+}
+
+# Option 2: Local (stdio transport)
 {
   "mcpServers": {
     "btcfi": {
       "command": "npx",
       "args": ["@aiindigo/btcfi-mcp"],
-      "env": {
-        "SVM_PRIVATE_KEY": "your-solana-key"
-      }
+      "env": { "SVM_PRIVATE_KEY": "your-key" }
     }
   }
-}
-
-# npm: @aiindigo/btcfi-mcp
-# 27 tools: fees, mempool, address, tx, blocks,
-# intelligence, security, staking, solv protocol,
-# zk proofs, real-time streams`}</div>
+}`}</div>
       </div>
 
       {/* Developer Tools */}
