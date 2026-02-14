@@ -36,7 +36,7 @@
 - 4 ZK proof endpoints: balance range, UTXO age, set membership, verification
 - Server-Sent Events streams: general events + whale alerts
 - Production hardening: persistent rate limiting, error tracking
-- OpenAPI spec updated to 31 endpoints
+- OpenAPI spec updated to 28 endpoints
 
 ### MP4 — Platform Expansion (20 tasks)
 - npm packages published: `@aiindigo/btcfi@3.0.0` + `@aiindigo/btcfi-mcp@3.0.1`
@@ -58,12 +58,14 @@
 
 | Metric | Count |
 |--------|-------|
-| API Endpoints | 31 |
+| API Endpoints | 28 |
 | MCP Tools | 27 |
 | SDK Methods | 28 |
 | YARA Patterns | 8 |
 | ZK Proof Types | 4 |
 | Payment Networks | 2 (Base + Solana) |
+| Telegram Bot Commands | 9 (live, free) |
+| Whale Alert Channel | @BTCFi_Whales (live, free) |
 | Total Tasks Completed | 86+ |
 
 ---

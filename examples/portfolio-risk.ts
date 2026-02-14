@@ -4,7 +4,7 @@
  * Analyzes risk for a Bitcoin address: UTXOs, risk score, threat analysis.
  * Run: npx tsx examples/portfolio-risk.ts <address>
  */
-import BTCFi from '../sdk/src/index.js';
+import BTCFi from '@aiindigo/btcfi';
 
 const btcfi = new BTCFi();
 const address = process.argv[2] || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'; // Satoshi's address

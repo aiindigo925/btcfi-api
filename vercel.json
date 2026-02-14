@@ -1,6 +1,14 @@
 {
   "framework": "nextjs",
   "regions": ["iad1", "sfo1"],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "btcfi-api.vercel.app" }],
+      "destination": "https://btcfi.aiindigo.com/$1",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/health",

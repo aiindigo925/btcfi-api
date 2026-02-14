@@ -39,13 +39,17 @@ export default async function Home() {
     { path: 'GET /api/v1/mempool', desc: 'Mempool summary + recent txs', price: '$0.01' },
     { path: 'GET /api/v1/address/{addr}', desc: 'Address balance + stats', price: '$0.01' },
     { path: 'GET /api/v1/address/{addr}/utxos', desc: 'Unspent outputs', price: '$0.01' },
+    { path: 'GET /api/v1/address/{addr}/txs', desc: 'Address transaction history', price: '$0.01' },
     { path: 'GET /api/v1/tx/{txid}', desc: 'Transaction details', price: '$0.01' },
+    { path: 'GET /api/v1/tx/{txid}/status', desc: 'Transaction confirmation status', price: '$0.01' },
     { path: 'POST /api/v1/tx/broadcast', desc: 'Broadcast signed tx', price: '$0.05' },
     { path: 'GET /api/v1/block/latest', desc: 'Latest blocks', price: '$0.01' },
+    { path: 'GET /api/v1/block/{id}', desc: 'Block by hash or height', price: '$0.01' },
     { path: 'GET /api/v1/intelligence/fees', desc: 'AI fee prediction (1h/6h/24h)', price: '$0.02' },
     { path: 'GET /api/v1/intelligence/whales', desc: 'Large tx detection + alerts', price: '$0.02' },
     { path: 'GET /api/v1/intelligence/risk/{addr}', desc: 'Address risk scoring', price: '$0.02' },
     { path: 'GET /api/v1/intelligence/network', desc: 'Network health analysis', price: '$0.02' },
+    { path: 'GET /api/v1/intelligence/consolidate/{addr}', desc: 'UTXO consolidation analysis', price: '$0.02' },
     { path: 'GET /api/v1/security/threat/{addr}', desc: 'YARA-pattern threat analysis', price: '$0.02' },
     { path: 'GET /api/v1/solv/reserves', desc: 'SolvBTC supply + chain breakdown', price: '$0.02' },
     { path: 'GET /api/v1/solv/yield', desc: 'xSolvBTC APY + yield strategies', price: '$0.02' },
@@ -67,6 +71,7 @@ export default async function Home() {
       <div style={css.hero}>
         <h1 style={css.title}>₿ BTCFi API</h1>
         <p style={css.subtitle}>Bitcoin + BTCFi data for AI agents via x402 micropayments</p>
+        <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 24px 0' }}>Free for humans: <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTC_Fi_Bot</a> on Telegram · Whale alerts on <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTCFi_Whales</a> · No signup needed</p>
         <div style={css.live}>
           <span><span style={css.liveLabel}>Block </span><span style={css.liveValue}>#{blockHeight.toLocaleString()}</span></span>
           <span><span style={css.liveLabel}>BTC </span><span style={css.liveValue}>${btcPrice.USD.toLocaleString()}</span></span>
@@ -123,6 +128,37 @@ curl -H "X-Payment: <proof>" \\
         </div>
       </div>
 
+      {/* Human Tools — moved above developer sections (FIX-3) */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>Free for Humans <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>no signup</span></h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Dashboard</div>
+            <p style={css.desc}>Live overview, address lookup, whale watch, fee calculator</p>
+            <a href="/dashboard" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
+            <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
+            <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open @BTC_Fi_Bot →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🐋</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Whale Alerts Channel</div>
+            <p style={css.desc}>Real-time whale transaction alerts — auto-posted every 15 min with buy/sell signals</p>
+            <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Join @BTCFi_Whales →</a>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🧩</div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Chrome Extension</div>
+            <p style={css.desc}>Live BTC price badge, fee alerts, address inspector, whale notifications</p>
+            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>Coming to Chrome Web Store</span>
+          </div>
+        </div>
+      </div>
+
       {/* Security */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Security</h2>
@@ -156,37 +192,6 @@ Decentralized RPC via Whistle Network`}</div>
 # zk proofs, real-time streams`}</div>
       </div>
 
-      {/* Human Tools */}
-      <div style={css.section}>
-        <h2 style={css.sectionTitle}>Human Interfaces</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={css.card}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
-            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Dashboard</div>
-            <p style={css.desc}>Live overview, address lookup, whale watch, fee calculator</p>
-            <a href="/dashboard" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open →</a>
-          </div>
-          <div style={css.card}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
-            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
-            <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
-            <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open @BTC_Fi_Bot →</a>
-          </div>
-          <div style={css.card}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🐋</div>
-            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Whale Alerts Channel</div>
-            <p style={css.desc}>Real-time whale transaction alerts — auto-posted every 15 min with buy/sell signals</p>
-            <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Join @BTCFi_Whales →</a>
-          </div>
-          <div style={css.card}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🧩</div>
-            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Chrome Extension</div>
-            <p style={css.desc}>Live BTC price badge, fee alerts, address inspector, whale notifications</p>
-            <span style={{ color: '#666', fontSize: '12px', display: 'inline-block', marginTop: '8px' }}>Coming to Chrome Web Store</span>
-          </div>
-        </div>
-      </div>
-
       {/* Developer Tools */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Developer Tools</h2>
@@ -218,7 +223,7 @@ Decentralized RPC via Whistle Network`}</div>
       {/* Footer */}
       <div style={css.footer}>
         <p>Built by <a href="https://aiindigo.com" target="_blank" rel="noopener noreferrer" style={css.link}>AI Indigo</a> · <a href="https://futuretoolsai.com" target="_blank" rel="noopener noreferrer" style={css.link}>FutureTools AI</a> · <a href="https://openclawterrace.com" target="_blank" rel="noopener noreferrer" style={css.link}>OpenClaw Terrace</a> · <a href="https://github.com/aiindigo925/btcfi-api" target="_blank" rel="noopener noreferrer" style={css.link}>GitHub</a></p>
-        <p style={{ marginTop: '8px' }}>Powered by <a href="https://mempool.space/" target="_blank" rel="noopener noreferrer" style={css.link}>mempool.space</a> · <a href="https://solv.finance" target="_blank" rel="noopener noreferrer" style={css.link}>Solv Protocol</a> · <a href="https://whistle.ninja" target="_blank" rel="noopener noreferrer" style={css.link}>Whistle Network</a> · <a href="https://x402.org" target="_blank" rel="noopener noreferrer" style={css.link}>x402</a> · <a href="https://perkinsfund.org" target="_blank" rel="noopener noreferrer" style={css.link}>PCEF/NLx402</a></p>
+        <p style={{ marginTop: '8px' }}>Powered by <a href="https://mempool.space/" target="_blank" rel="noopener noreferrer" style={css.link}>mempool.space</a> · <a href="https://solv.finance" target="_blank" rel="noopener noreferrer" style={css.link}>Solv Protocol</a> · <a href="https://whistle.ninja" target="_blank" rel="noopener noreferrer" style={css.link}>Whistle Network</a> · <a href="https://perkinsfund.org" target="_blank" rel="noopener noreferrer" style={css.link}>PCEF/NLx402</a></p>
       </div>
     </div>
   );

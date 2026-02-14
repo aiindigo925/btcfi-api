@@ -8,7 +8,7 @@
  *   npx tsx examples/threat-scanner.ts
  */
 
-import BTCFi from '../sdk/src/index';
+import BTCFi from '@aiindigo/btcfi';
 
 const btcfi = new BTCFi({ baseUrl: 'https://btcfi.aiindigo.com' });
 

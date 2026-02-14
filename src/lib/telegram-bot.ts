@@ -2,7 +2,7 @@
  * BTCFi Telegram Bot — grammY
  *
  * Commands: /price, /fees, /mempool, /address, /tx, /whale, /risk, /network, /help
- * Inline mode: @BTCFiBot <address>
+ * Inline mode: @BTC_Fi_Bot <address>
  * Channel posting: @BTCFi_Whales whale alerts with buy/sell signals (MP5 Phase 1)
  *
  * Lazy-initialized: grammY throws on empty token, so Bot is only

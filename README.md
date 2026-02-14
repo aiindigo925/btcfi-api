@@ -6,7 +6,16 @@ Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo]
 
 ---
 
-BTCFi API provides 31 Bitcoin data and intelligence endpoints accessible via x402 micropayments. Pay $0.01–$0.05 per query in USDC — no API keys, no subscriptions.
+BTCFi API provides 28 Bitcoin data and intelligence endpoints accessible via x402 micropayments. Pay $0.01–$0.05 per query in USDC — no API keys, no subscriptions.
+
+## Free for Humans
+
+No payments, no signup, no API keys. Just open Telegram.
+
+- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 9 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`. Completely free.
+- **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min with buy/sell signals. Just join the channel.
+- **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch.
+- **Chrome Extension** — Price badge, whale alerts, address inspector (coming to Chrome Web Store).
 
 ## Quick Start
 
@@ -28,23 +37,17 @@ const fees = await btcfi.fees();
 const risk = await btcfi.intelligence.risk("bc1q...");
 ```
 
-**For Humans:**
-- [Web Dashboard](https://btcfi.aiindigo.com/dashboard)
-- [Telegram Bot](https://t.me/BTC_Fi_Bot) — `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`
-- [Chrome Extension](https://btcfi.aiindigo.com) — price badge, whale alerts, address inspector
-- [Interactive API Docs](https://btcfi.aiindigo.com/api/docs)
-
 ## Endpoints
 
 | Group | Count | Price | Examples |
 |-------|-------|-------|---------|
-| Core | 11 | $0.01 | fees, mempool, address, UTXOs, transactions, blocks |
-| Intelligence | 5 | $0.02 | fee prediction, whale alerts, risk scoring, network health |
+| Core | 10 | $0.01–$0.05 | fees, mempool, address, UTXOs, tx history, transactions, blocks |
+| Intelligence | 5 | $0.02 | fee prediction, whale alerts, risk scoring, network health, UTXO consolidation |
 | Security | 1 | $0.02 | YARA-pattern threat analysis |
 | Solv Protocol | 4 | $0.02 | SolvBTC reserves, yield, liquidity, risk |
-| ZK Proofs | 4 | $0.01–$0.03 | balance range, UTXO age, set membership |
+| ZK Proofs | 4 | $0.01–$0.03 | balance range, UTXO age, set membership, verification |
 | Streams | 2 | $0.01 | real-time blocks, whale transactions (SSE) |
-| System | 4 | Free | health, index, staking status |
+| System | 2 | Free | health, staking status |
 
 Full specification: [OpenAPI 3.1](https://btcfi.aiindigo.com/openapi.json)
 

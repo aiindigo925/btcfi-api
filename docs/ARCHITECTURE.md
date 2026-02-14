@@ -25,15 +25,15 @@ Agent / Browser / Bot
 
 | Group | Endpoints | Pricing | Description |
 |-------|-----------|---------|-------------|
-| Core | 11 | $0.01 | Fees, mempool, address, UTXOs, transactions, blocks, broadcast |
+| Core | 10 | $0.01–$0.05 | Fees, mempool, address, UTXOs, tx history, transactions, blocks, broadcast |
 | Intelligence | 5 | $0.02 | Fee prediction, whale detection, risk scoring, network health, UTXO consolidation |
 | Security | 1 | $0.02 | YARA-pattern threat analysis (8 rules) |
 | Solv Protocol | 4 | $0.02 | SolvBTC reserves, yield, liquidity, risk assessment |
 | ZK Proofs | 4 | $0.01–$0.03 | Balance range, UTXO age, set membership, proof verification |
 | Streams | 2 | $0.01 | Server-Sent Events for blocks, whale transactions |
-| System | 4 | Free | API index, health check, staking status, admin revenue |
+| System | 2 | Free | Health check, staking status |
 
-**Total: 31 endpoints**
+**Total: 28 public endpoints** (26 paid + 2 free)
 
 ## Middleware Pipeline
 

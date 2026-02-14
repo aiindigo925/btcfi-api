@@ -2,6 +2,14 @@
 
 Bitcoin data for agents. No tokens. Just ship.
 
+## For Humans (Free)
+
+No payments, no signup, no API keys needed.
+
+- **Telegram Bot:** [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) — 9 commands (`/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`) + inline mode
+- **Whale Alerts:** [@BTCFi_Whales](https://t.me/BTCFi_Whales) — Real-time whale tx alerts every 15 min with buy/sell signals
+- **Dashboard:** [btcfi.aiindigo.com/dashboard](https://btcfi.aiindigo.com/dashboard) — Live overview, address lookup, fee calculator
+
 ## 30-Second Start (MCP for Claude Desktop)
 
 ```bash

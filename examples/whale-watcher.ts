@@ -4,7 +4,7 @@
  * Monitors large Bitcoin transactions and alerts on whale movements.
  * Run: npx tsx examples/whale-watcher.ts
  */
-import BTCFi from '../sdk/src/index.js';
+import BTCFi from '@aiindigo/btcfi';
 
 const btcfi = new BTCFi();
 

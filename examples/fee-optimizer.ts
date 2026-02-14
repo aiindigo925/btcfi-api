@@ -4,7 +4,7 @@
  * Monitors Bitcoin fees and recommends optimal send times.
  * Run: npx tsx examples/fee-optimizer.ts
  */
-import BTCFi from '../sdk/src/index.js';
+import BTCFi from '@aiindigo/btcfi';
 
 const btcfi = new BTCFi();
 
