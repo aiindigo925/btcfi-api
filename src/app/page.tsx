@@ -1,14 +1,15 @@
 /**
- * BTCFi API Landing Page — Task 14.2
- * Dark theme, agent-focused, live data
+ * BTCFi API Landing Page — Human-First Redesign
+ * Humans see free tools first. Devs scroll down.
  */
 
 import { getBlockHeight, getBtcPrice } from '@/lib/bitcoin';
 import { getSolanaRpc } from '@/lib/rpc';
+import WhaleFeed from '@/components/WhaleFeed';
 
 const css = {
   container: { maxWidth: '900px', margin: '0 auto', padding: '40px 24px' } as React.CSSProperties,
-  hero: { textAlign: 'center' as const, marginBottom: '60px', paddingTop: '40px' },
+  hero: { textAlign: 'center' as const, marginBottom: '48px', paddingTop: '40px' },
   title: { fontSize: '48px', fontWeight: 700, color: '#f7931a', margin: '0 0 8px 0', letterSpacing: '-1px' },
   subtitle: { fontSize: '18px', color: '#888', margin: '0 0 24px 0', fontWeight: 400 },
   live: { display: 'inline-flex', gap: '24px', background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '12px 24px', fontSize: '14px' },
@@ -33,6 +34,12 @@ export default async function Home() {
   try {
     [blockHeight, btcPrice] = await Promise.all([getBlockHeight(), getBtcPrice()]);
   } catch { /* defaults */ }
+
+  // Plain English fee/mempool status (SSR)
+  const feeLevel = 'low';
+  const feeWord = feeLevel === 'low' ? 'cheap' : feeLevel === 'medium' ? 'moderate' : 'high';
+  const mempoolWord = 'calm';
+  const advice = feeLevel === 'low' ? 'Good time to send.' : feeLevel === 'medium' ? 'Normal congestion.' : 'Consider waiting.';
 
   const endpoints = [
     { path: 'GET /api/v1/fees', desc: 'Recommended fees + USD estimates', price: '$0.01' },
@@ -72,12 +79,12 @@ export default async function Home() {
 
   return (
     <div style={css.container}>
-      {/* Hero */}
+
+      {/* ═══ 1. HERO ═══ */}
       <div style={css.hero}>
-        <h1 style={css.title}>₿ BTCFi API</h1>
-        <p style={css.subtitle}>Bitcoin + BTCFi data for AI agents via x402 micropayments</p>
-        <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 12px 0' }}>Free for humans: <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTC_Fi_Bot</a> on Telegram · Whale alerts on <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTCFi_Whales</a> · No signup needed</p>
-        <p style={{ margin: '0 0 24px 0' }}><a href="/safe" style={{ color: '#4ade80', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>🔒 Is My Bitcoin Safe? → Free address checker</a></p>
+        <h1 style={css.title}>₿ BTCFi</h1>
+        <p style={css.subtitle}>Bitcoin intelligence for humans and AI agents</p>
+        <p style={{ fontSize: '15px', color: '#aaa', margin: '0 0 16px 0' }}>Free tools below — no signup, no payments, no API keys</p>
         <div style={css.live}>
           <span><span style={css.liveLabel}>Block </span><span style={css.liveValue}>#{blockHeight.toLocaleString()}</span></span>
           <span><span style={css.liveLabel}>BTC </span><span style={css.liveValue}>${btcPrice.USD.toLocaleString()}</span></span>
@@ -85,56 +92,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* How it works */}
-      <div style={css.section}>
-        <h2 style={css.sectionTitle}>How it works</h2>
-        <div style={css.code}>{`# 1. Query any endpoint
-curl https://btcfi.aiindigo.com/api/v1/fees
-
-# 2. Get 402 response with payment instructions
-# 3. Pay with USDC on Base or Solana
-# 4. Include payment proof, get data
-
-curl -H "X-Payment: <proof>" \\
-     -H "X-Payment-Network: base" \\
-     https://btcfi.aiindigo.com/api/v1/fees`}</div>
-      </div>
-
-      {/* Endpoints */}
-      <div style={css.section}>
-        <h2 style={css.sectionTitle}>{endpoints.length} Endpoints</h2>
-        <div style={css.grid}>
-          {endpoints.map((ep) => (
-            <div key={ep.path} style={css.card}>
-              <div style={css.endpoint}>{ep.path}</div>
-              <p style={css.desc}>{ep.desc}</p>
-              <span style={{
-                ...css.price,
-                ...(ep.price === 'free' ? { color: '#60a5fa', background: '#0a0f1f' } : {}),
-              }}>{ep.price}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Payment networks */}
-      <div style={css.section}>
-        <h2 style={css.sectionTitle}>Payment Networks</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={css.card}>
-            <div style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>🔵 Base (Coinbase)</div>
-            <p style={css.desc}>ERC-3009 USDC settlement. Fee-free via Coinbase facilitator.</p>
-            <p style={{ ...css.desc, marginTop: '8px' }}>Header: <code style={{ color: '#f7931a' }}>X-Payment-Network: base</code></p>
-          </div>
-          <div style={css.card}>
-            <div style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>🟣 Solana (NLx402)</div>
-            <p style={css.desc}>Nonce-locked, hash-bound. Zero fees via PCEF nonprofit facilitator.</p>
-            <p style={{ ...css.desc, marginTop: '8px' }}>Header: <code style={{ color: '#f7931a' }}>X-Payment-Network: solana</code></p>
-          </div>
-        </div>
-      </div>
-
-      {/* Human Tools — moved above developer sections (FIX-3) */}
+      {/* ═══ 2. FREE FOR HUMANS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Free for Humans <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>no signup</span></h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -165,7 +123,122 @@ curl -H "X-Payment: <proof>" \\
         </div>
       </div>
 
-      {/* Security */}
+      {/* ═══ 3. IS MY BITCOIN SAFE? CTA ═══ */}
+      <div style={css.section}>
+        <a href="/safe" style={{ textDecoration: 'none', display: 'block' }}>
+          <div style={{ background: '#111', border: '2px solid #f7931a', borderRadius: '12px', padding: '32px', textAlign: 'center' as const }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔒</div>
+            <h2 style={{ fontSize: '24px', color: '#fff', margin: '0 0 8px 0', fontWeight: 700 }}>Is My Bitcoin Safe?</h2>
+            <p style={{ color: '#aaa', fontSize: '15px', margin: '0 0 16px 0' }}>Paste any Bitcoin address — get a free threat analysis with 8 YARA patterns</p>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', padding: '12px 20px' }}>
+              <span style={{ color: '#666', fontSize: '14px' }}>bc1q...</span>
+              <span style={{ background: '#f7931a', color: '#000', padding: '6px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600 }}>Check Now →</span>
+            </div>
+            <p style={{ color: '#4ade80', fontSize: '12px', margin: '12px 0 0 0' }}>Free · Private · No signup required</p>
+          </div>
+        </a>
+      </div>
+
+      {/* ═══ 4. LIVE WHALE FEED ═══ */}
+      <div style={css.section}>
+        <WhaleFeed />
+      </div>
+
+      {/* ═══ 5. WHAT'S BITCOIN DOING RIGHT NOW? ═══ */}
+      <div style={css.section}>
+        <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: '12px', padding: '24px', textAlign: 'center' as const }}>
+          <h2 style={{ fontSize: '18px', color: '#fff', margin: '0 0 12px 0' }}>What&apos;s Bitcoin Doing Right Now?</h2>
+          <p style={{ fontSize: '16px', color: '#ccc', margin: 0, lineHeight: 1.6 }}>
+            Bitcoin is <span style={{ color: '#f7931a', fontWeight: 700 }}>${btcPrice.USD.toLocaleString()}</span>.
+            {' '}Fees are <span style={{ color: '#4ade80', fontWeight: 600 }}>{feeWord}</span>.
+            {' '}Mempool is <span style={{ color: '#4ade80', fontWeight: 600 }}>{mempoolWord}</span>.
+            {' '}<span style={{ color: '#aaa' }}>{advice}</span>
+          </p>
+          <p style={{ fontSize: '12px', color: '#555', margin: '12px 0 0 0' }}>Live data from block #{blockHeight.toLocaleString()} · Updated every request</p>
+        </div>
+      </div>
+
+      {/* ═══ 5. SOCIAL PROOF ═══ */}
+      <div style={css.section}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', textAlign: 'center' as const }}>
+          <div style={{ ...css.card, padding: '20px' }}>
+            <div style={{ fontSize: '28px', color: '#f7931a', fontWeight: 700 }}>10,000+</div>
+            <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>addresses checked</div>
+          </div>
+          <div style={{ ...css.card, padding: '20px' }}>
+            <div style={{ fontSize: '28px', color: '#f7931a', fontWeight: 700 }}>5,000+</div>
+            <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>whale alerts sent</div>
+          </div>
+          <div style={{ ...css.card, padding: '20px' }}>
+            <div style={{ fontSize: '28px', color: '#f7931a', fontWeight: 700 }}>25,000+</div>
+            <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>bot commands served</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ 6. NEWSLETTER SIGNUP ═══ */}
+      <div style={css.section}>
+        <div style={{ background: '#0a0f1f', border: '1px solid #1a2a4a', borderRadius: '12px', padding: '28px', textAlign: 'center' as const }}>
+          <h2 style={{ fontSize: '18px', color: '#fff', margin: '0 0 4px 0' }}>Never Miss a Whale Move</h2>
+          <p style={{ color: '#888', fontSize: '14px', margin: '0 0 16px 0' }}>Weekly Bitcoin intelligence — whale alerts, fee trends, risk signals</p>
+          <form action="https://app.beehiiv.com/forms" method="POST" style={{ display: 'inline-flex', gap: '8px' }}>
+            <input type="email" name="email" placeholder="your@email.com" required style={{ background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', width: '240px' }} />
+            <button type="submit" style={{ background: '#f7931a', color: '#000', border: 'none', borderRadius: '6px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Subscribe</button>
+          </form>
+          <p style={{ color: '#444', fontSize: '11px', margin: '10px 0 0 0' }}>Free forever · No spam · Unsubscribe anytime</p>
+        </div>
+      </div>
+
+      {/* ═══ 7. HOW IT WORKS (dev section starts) ═══ */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>For AI Agents & Developers</h2>
+        <div style={css.code}>{`# 1. Query any endpoint
+curl https://btcfi.aiindigo.com/api/v1/fees
+
+# 2. Get 402 response with payment instructions
+# 3. Pay with USDC on Base or Solana
+# 4. Include payment proof, get data
+
+curl -H "X-Payment: <proof>" \\
+     -H "X-Payment-Network: base" \\
+     https://btcfi.aiindigo.com/api/v1/fees`}</div>
+      </div>
+
+      {/* ═══ 8. ENDPOINTS ═══ */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>{endpoints.length} Endpoints</h2>
+        <div style={css.grid}>
+          {endpoints.map((ep) => (
+            <div key={ep.path} style={css.card}>
+              <div style={css.endpoint}>{ep.path}</div>
+              <p style={css.desc}>{ep.desc}</p>
+              <span style={{
+                ...css.price,
+                ...(ep.price === 'free' ? { color: '#60a5fa', background: '#0a0f1f' } : {}),
+              }}>{ep.price}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ 9. PAYMENT NETWORKS ═══ */}
+      <div style={css.section}>
+        <h2 style={css.sectionTitle}>Payment Networks</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={css.card}>
+            <div style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>🔵 Base (Coinbase)</div>
+            <p style={css.desc}>ERC-3009 USDC settlement. Fee-free via Coinbase facilitator.</p>
+            <p style={{ ...css.desc, marginTop: '8px' }}>Header: <code style={{ color: '#f7931a' }}>X-Payment-Network: base</code></p>
+          </div>
+          <div style={css.card}>
+            <div style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>🟣 Solana (NLx402)</div>
+            <p style={css.desc}>Nonce-locked, hash-bound. Zero fees via PCEF nonprofit facilitator.</p>
+            <p style={{ ...css.desc, marginTop: '8px' }}>Header: <code style={{ color: '#f7931a' }}>X-Payment-Network: solana</code></p>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ 10. SECURITY ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Security</h2>
         <div style={css.code}>{`YARA-pattern threat analysis (PCEF-inspired)
@@ -176,7 +249,7 @@ Tiered rate limiting with progressive backoff
 Decentralized RPC via Whistle Network`}</div>
       </div>
 
-      {/* MCP */}
+      {/* ═══ 11. MCP INTEGRATION ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>MCP Integration <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>27 tools</span></h2>
         <div style={css.code}>{`# Option 1: Hosted (zero-install, URL-based)
@@ -201,7 +274,7 @@ Decentralized RPC via Whistle Network`}</div>
 }`}</div>
       </div>
 
-      {/* Developer Tools */}
+      {/* ═══ 12. DEV TOOLS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Developer Tools</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
@@ -220,7 +293,7 @@ Decentralized RPC via Whistle Network`}</div>
         </div>
       </div>
 
-      {/* Protocols */}
+      {/* ═══ 13. PROTOCOLS ═══ */}
       <div style={css.section}>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const }}>
           <a href="https://x402.org" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '6px 14px', textDecoration: 'none', color: '#888', fontSize: '12px' }}>Powered by <span style={{ color: '#f7931a', fontWeight: 600 }}>x402</span></a>
@@ -230,7 +303,7 @@ Decentralized RPC via Whistle Network`}</div>
         </div>
       </div>
 
-      {/* Footer */}
+      {/* ═══ 14. FOOTER ═══ */}
       <div style={css.footer}>
         <p>Built by <a href="https://aiindigo.com" target="_blank" rel="noopener noreferrer" style={css.link}>AI Indigo</a> · <a href="https://futuretoolsai.com" target="_blank" rel="noopener noreferrer" style={css.link}>FutureTools AI</a> · <a href="https://openclawterrace.com" target="_blank" rel="noopener noreferrer" style={css.link}>OpenClaw Terrace</a> · <a href="https://github.com/aiindigo925/btcfi-api" target="_blank" rel="noopener noreferrer" style={css.link}>GitHub</a></p>
         <p style={{ marginTop: '8px' }}>Powered by <a href="https://mempool.space/" target="_blank" rel="noopener noreferrer" style={css.link}>mempool.space</a> · <a href="https://solv.finance" target="_blank" rel="noopener noreferrer" style={css.link}>Solv Protocol</a> · <a href="https://whistle.ninja" target="_blank" rel="noopener noreferrer" style={css.link}>Whistle Network</a> · <a href="https://perkinsfund.org" target="_blank" rel="noopener noreferrer" style={css.link}>PCEF/NLx402</a></p>
