@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "BTCFi — Bitcoin Intelligence",
+  "version": "1.0.0",
+  "description": "Live BTC price, fee estimates, whale alerts, and address inspector. Powered by btcfi.aiindigo.com.",
+  "permissions": ["activeTab", "contextMenus", "notifications", "storage", "alarms"],
+  "host_permissions": ["https://btcfi.aiindigo.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BTCFi"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

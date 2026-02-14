@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { max-width: 480px; margin: 40px auto; background: #0a0a0a; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', monospace; padding: 24px; }
+    h1 { color: #f7931a; font-size: 20px; margin-bottom: 24px; }
+    .setting { margin-bottom: 20px; padding: 16px; background: #111; border: 1px solid #1a1a1a; border-radius: 8px; }
+    .label { color: #888; font-size: 12px; margin-bottom: 6px; }
+    .row { display: flex; align-items: center; justify-content: space-between; }
+    input[type="number"] { background: #0a0a0a; border: 1px solid #222; color: #fff; padding: 6px 10px; border-radius: 4px; width: 80px; font-family: inherit; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #333; border-radius: 24px; transition: 0.2s; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #666; border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .slider { background: #f7931a; }
+    .toggle input:checked + .slider:before { transform: translateX(20px); background: #fff; }
+    .saved { color: #4ade80; font-size: 12px; display: none; margin-top: 12px; }
+    button { background: #f7931a; color: #000; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>BTCFi Settings</h1>
+
+  <div class="setting">
+    <div class="row">
+      <div>
+        <div class="label">Whale Notifications</div>
+        <div style="font-size: 13px">Get notified for large BTC moves</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="whaleAlerts" checked><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="setting">
+    <div class="row">
+      <div>
+        <div class="label">Whale Threshold (BTC)</div>
+        <div style="font-size: 13px">Min BTC for notification</div>
+      </div>
+      <input type="number" id="whaleThreshold" value="50" min="10" max="10000">
+    </div>
+  </div>
+
+  <button id="save">Save Settings</button>
+  <div class="saved" id="saved">Settings saved!</div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    chrome.storage.sync.get({ whaleAlerts: true, whaleThreshold: 50 }, (s) => {
+      $('whaleAlerts').checked = s.whaleAlerts;
+      $('whaleThreshold').value = s.whaleThreshold;
+    });
+
+    $('save').addEventListener('click', () => {
+      chrome.storage.sync.set({
+        whaleAlerts: $('whaleAlerts').checked,
+        whaleThreshold: parseInt($('whaleThreshold').value) || 50,
+      }, () => {
+        $('saved').style.display = 'block';
+        setTimeout(() => $('saved').style.display = 'none', 2000);
+      });
+    });
+  </script>
+</body>
+</html>
