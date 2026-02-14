@@ -10,7 +10,7 @@
 
 // ============ SOLANA RPC ============
 
-const SOLANA_RPC_PRIMARY = 'https://rpc.whistle.ninja/rpc';
+const SOLANA_RPC_PRIMARY = process.env.SOLANA_RPC_URL || 'https://rpc.whistle.ninja/rpc';
 const SOLANA_RPC_FALLBACK = 'https://api.mainnet-beta.solana.com';
 
 let activeSolanaRpc = SOLANA_RPC_PRIMARY;
