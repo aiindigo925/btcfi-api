@@ -1,5 +1,36 @@
 # BTCFi API — Changelog
 
+## v4.0.0 (2026-02-14)
+
+**Major release: Growth expansion — free viral tools, multi-chain, hosted MCP, wallet connect.**
+
+### New Endpoints
+- `GET /api/v1/eth/gas` — ETH gas prices in gwei + USD
+- `GET /api/v1/eth/address/{addr}` — ETH balance + token balances
+- `GET /api/v1/eth/tx/{hash}` — ETH transaction details + gas used
+- `GET /api/v1/sol/fees` — SOL priority fees + TPS
+- `GET /api/v1/sol/address/{addr}` — SOL balance + token accounts
+- `GET /api/v1/safe` — Free address threat analysis (internal proxy)
+- `POST /api/mcp` — Hosted MCP server (Streamable HTTP, zero-install)
+
+### New Features
+- "Is My Bitcoin Safe?" free page at `/safe` with SEO, Twitter share, risk visualization
+- X/Twitter whale alert auto-posting via twitter-api-v2
+- Dashboard wallet connection: Phantom (Solana), Coinbase Wallet, MetaMask (EVM)
+- Portfolio tracker: `/watch`, `/unwatch`, `/watchlist`, `/alerts` Telegram commands
+- Balance change alerts via Vercel Cron (every 10 min)
+- Hosted MCP at `/api/mcp` — 27 tools accessible via URL (no npx needed)
+- Chrome extension scaffold: Manifest V3 with price badge, whale alerts, address detection
+- FutureTools AI badge on landing page
+- Telegram bot expanded to 15 commands (+6: eth_gas, sol_fees, watch, unwatch, watchlist, alerts)
+
+### Improvements
+- Landing page: "Free for Humans" section, /safe hero link, hosted MCP config shown
+- All docs updated for 33 endpoint count (28 BTC + 3 ETH + 2 SOL)
+- 2 npm dependencies added: twitter-api-v2, @modelcontextprotocol/sdk
+
+---
+
 ## v3.0.1 (2026-02-11)
 
 **Distribution: npm packages, MCP Registry, Glama, Telegram bot activation.**

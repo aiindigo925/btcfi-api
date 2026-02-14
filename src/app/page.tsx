@@ -63,6 +63,11 @@ export default async function Home() {
     { path: 'GET /api/v1/stream/whales', desc: 'SSE: whale tx alerts', price: '$0.01' },
     { path: 'GET /api/v1/staking/status', desc: 'Staking tier check', price: 'free' },
     { path: 'GET /api/health', desc: 'System health + RPC status', price: 'free' },
+    { path: 'GET /api/v1/eth/gas', desc: 'ETH gas prices in gwei + USD', price: '$0.01' },
+    { path: 'GET /api/v1/eth/address/{addr}', desc: 'ETH balance + token balances', price: '$0.01' },
+    { path: 'GET /api/v1/eth/tx/{hash}', desc: 'ETH transaction details + gas', price: '$0.01' },
+    { path: 'GET /api/v1/sol/fees', desc: 'SOL priority fees + TPS', price: '$0.01' },
+    { path: 'GET /api/v1/sol/address/{addr}', desc: 'SOL balance + token accounts', price: '$0.01' },
   ];
 
   return (
@@ -142,7 +147,7 @@ curl -H "X-Payment: <proof>" \\
           <div style={css.card}>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
             <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Telegram Bot</div>
-            <p style={css.desc}>/price /fees /mempool /address /whale /risk — 9 commands + inline mode</p>
+            <p style={css.desc}>/price /fees /mempool /address /whale /risk + 9 more — 15 commands + inline mode</p>
             <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ ...css.link, fontSize: '13px', display: 'inline-block', marginTop: '8px' }}>Open @BTC_Fi_Bot →</a>
           </div>
           <div style={css.card}>

@@ -11,3 +11,7 @@ node_modules/
 
 mcp/.mcpregistry_*
 mcp/mcp-publisher.exe
+
+# Internal state — lives in btcfi-docs (private)
+SESSION-STATE.md
+CLAUDE.md

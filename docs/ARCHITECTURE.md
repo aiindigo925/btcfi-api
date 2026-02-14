@@ -32,8 +32,10 @@ Agent / Browser / Bot
 | ZK Proofs | 4 | $0.01–$0.03 | Balance range, UTXO age, set membership, proof verification |
 | Streams | 2 | $0.01 | Server-Sent Events for blocks, whale transactions |
 | System | 2 | Free | Health check, staking status |
+| Ethereum | 3 | $0.01 | ETH gas, address balance, transaction details |
+| Solana | 2 | $0.01 | SOL priority fees, address balance |
 
-**Total: 28 public endpoints** (26 paid + 2 free)
+**Total: 33 public endpoints** (31 paid + 2 free)
 
 ## Middleware Pipeline
 

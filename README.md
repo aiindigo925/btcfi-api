@@ -6,13 +6,13 @@ Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo]
 
 ---
 
-BTCFi API provides 28 Bitcoin data and intelligence endpoints accessible via x402 micropayments. Pay $0.01–$0.05 per query in USDC — no API keys, no subscriptions.
+BTCFi API provides 33 endpoints across Bitcoin, Ethereum, and Solana — accessible via x402 micropayments. Pay $0.01–$0.05 per query in USDC — no API keys, no subscriptions.
 
 ## Free for Humans
 
 No payments, no signup, no API keys. Just open Telegram.
 
-- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 9 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`. Completely free.
+- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 15 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`. Completely free.
 - **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min with buy/sell signals. Just join the channel.
 - **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch.
 - **Chrome Extension** — Price badge, whale alerts, address inspector (coming to Chrome Web Store).
@@ -48,6 +48,8 @@ const risk = await btcfi.intelligence.risk("bc1q...");
 | ZK Proofs | 4 | $0.01–$0.03 | balance range, UTXO age, set membership, verification |
 | Streams | 2 | $0.01 | real-time blocks, whale transactions (SSE) |
 | System | 2 | Free | health, staking status |
+| Ethereum | 3 | $0.01 | ETH gas, address balance, transaction details |
+| Solana | 2 | $0.01 | SOL priority fees, address balance |
 
 Full specification: [OpenAPI 3.1](https://btcfi.aiindigo.com/openapi.json)
 

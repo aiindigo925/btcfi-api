@@ -52,34 +52,47 @@
 - Uptime monitoring via Vercel Cron
 - 3 security audits with 35+ bugs found and fixed
 
+### MP5 — Growth & Expansion (58 tasks)
+- "Is My Bitcoin Safe?" free address checker at `/safe` — viral SEO tool
+- X/Twitter whale alert auto-posting
+- Dashboard wallet connection (Phantom, Coinbase Wallet, MetaMask)
+- Portfolio tracker: `/watch`, `/unwatch`, `/watchlist`, `/alerts` Telegram commands
+- FutureTools AI badge on landing page
+- Hosted MCP server at `/api/mcp` (Streamable HTTP, zero-install)
+- Multi-chain: 3 Ethereum endpoints (gas, address, tx) + 2 Solana endpoints (fees, address)
+- Chrome extension scaffold (Manifest V3)
+- Telegram bot expanded to 15 commands
+
 ---
 
 ## Current Status
 
 | Metric | Count |
 |--------|-------|
-| API Endpoints | 28 |
-| MCP Tools | 27 |
+| API Endpoints | 33 (28 BTC + 3 ETH + 2 SOL) |
+| MCP Tools | 27 (hosted + stdio) |
 | SDK Methods | 28 |
 | YARA Patterns | 8 |
 | ZK Proof Types | 4 |
 | Payment Networks | 2 (Base + Solana) |
-| Telegram Bot Commands | 9 (live, free) |
+| Telegram Bot Commands | 15 (live, free) |
 | Whale Alert Channel | @BTCFi_Whales (live, free) |
-| Total Tasks Completed | 86+ |
+| Free Tools | /safe, @BTC_Fi_Bot, @BTCFi_Whales, Dashboard |
+| Total Tasks Completed | 144+ |
 
 ---
 
 ## Planned
 
-### MP5 — Growth & Ecosystem
+### MP6 — Scale & Monetize
 - On-chain staking contracts (Base + Solana)
 - WebSocket real-time feeds upgrade
-- Multi-chain expansion (Ethereum, Solana native data)
 - Self-hosted Bitcoin node for full data sovereignty
-- x402 ecosystem directory listing
-- Newsletter integration
+- Newsletter integration via Beehiiv
 - Documentation site
+- Chrome Web Store publication
+- Smithery MCP listing
+- FutureTools AI + AI Indigo marketplace listings
 
 ---
 
