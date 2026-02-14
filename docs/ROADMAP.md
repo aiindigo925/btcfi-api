@@ -87,7 +87,7 @@
 
 - **No token.** Revenue from x402 micropayments — pure utility.
 - **Open source.** Every endpoint, circuit, and pattern is auditable.
-- **Agent-native.** Built for machines first, humans second.
+- **Agent-native, human-friendly.** Built for machines. Free for humans.
 - **Privacy by design.** ZK proofs, encrypted responses, no data stored.
 - **Ship > talk.** Working product over promises.
 

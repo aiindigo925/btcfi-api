@@ -25,8 +25,7 @@ const FOOTER =
 // Footer for channel posts
 const CH_FOOTER =
   '\n\n\u2014\n' +
-  '\ud83d\udcca [BTCFi API](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n' +
-  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
+  '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot) _\\|_ Free for humans';
 
 // Lazy singleton
 let _bot: Bot | null = null;
