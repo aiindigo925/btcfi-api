@@ -35,8 +35,8 @@ export default function WhaleFeed() {
         if (mounted) {
           setWhales(txs.map((tx: any) => ({
             txid: tx.txid || tx.hash || '???',
-            valueBtc: tx.valueBtc || tx.value || 0,
-            valueUsd: tx.valueUsd || tx.usd || 0,
+            valueBtc: parseFloat(tx.totalValueBtc) || tx.valueBtc || tx.value || 0,
+            valueUsd: parseFloat(tx.totalValueUsd) || tx.valueUsd || tx.usd || 0,
             timeAgo: formatTime(Date.now() - (tx.timestamp ? tx.timestamp * 1000 : Date.now())),
             signal: tx.signal || 'neutral',
           })));
