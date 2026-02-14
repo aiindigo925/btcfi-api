@@ -10,6 +10,7 @@
  */
 
 import { Bot } from 'grammy';
+import { addWatch, removeWatch, getWatchlist, setAlerts, getAlerts } from './watchlist';
 
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -156,6 +157,10 @@ function registerCommands(b: Bot): void {
     + '/whale \u2014 Recent whale movements\n'
     + '/risk `<addr>` \u2014 Address risk score\n'
     + '/network \u2014 Network health\n'
+    + '/watch `<addr>` \u2014 Watch an address\n'
+    + '/unwatch `<addr>` \u2014 Stop watching\n'
+    + '/watchlist \u2014 Your watched addresses\n'
+    + '/alerts `on|off` \u2014 Toggle DM alerts\n'
     + '/help \u2014 This message\n\n'
     + '_Powered by_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com)',
     { parse_mode: 'MarkdownV2' }
@@ -170,7 +175,11 @@ function registerCommands(b: Bot): void {
     + '`/tx abc123...` \u2014 TX details\n'
     + '`/whale` \u2014 Whale alert feed\n'
     + '`/risk bc1q...` \u2014 Risk analysis\n'
-    + '`/network` \u2014 Network health',
+    + '`/network` \u2014 Network health\n'
+    + '`/watch bc1q...` \u2014 Watch address\n'
+    + '`/unwatch bc1q...` \u2014 Stop watching\n'
+    + '`/watchlist` \u2014 Your watched addresses\n'
+    + '`/alerts on\\|off` \u2014 Toggle DM alerts',
     { parse_mode: 'MarkdownV2' }
   ));
 
@@ -319,6 +328,63 @@ function registerCommands(b: Bot): void {
         { parse_mode: 'MarkdownV2' }
       );
     } catch { await ctx.reply('\u274c Network health unavailable'); }
+  });
+
+  // ============ WATCHLIST COMMANDS (MP5 Phase 5) ============
+
+  b.command('watch', async (ctx) => {
+    const addr = ctx.match?.trim();
+    if (!addr || !looksLikeBtcAddress(addr)) {
+      return ctx.reply('Usage: /watch <bitcoin_address>');
+    }
+    try {
+      const chatId = String(ctx.chat.id);
+      const result = await addWatch(chatId, addr);
+      await ctx.reply(result.ok ? '\u2705 ' + result.message : '\u274c ' + result.message);
+    } catch { await ctx.reply('\u274c Failed to add watch'); }
+  });
+
+  b.command('unwatch', async (ctx) => {
+    const addr = ctx.match?.trim();
+    if (!addr || !looksLikeBtcAddress(addr)) {
+      return ctx.reply('Usage: /unwatch <bitcoin_address>');
+    }
+    try {
+      const chatId = String(ctx.chat.id);
+      const result = await removeWatch(chatId, addr);
+      await ctx.reply('\u2705 ' + result.message);
+    } catch { await ctx.reply('\u274c Failed to remove watch'); }
+  });
+
+  b.command('watchlist', async (ctx) => {
+    try {
+      const chatId = String(ctx.chat.id);
+      const addresses = await getWatchlist(chatId);
+      if (!addresses.length) {
+        return ctx.reply('\ud83d\udccd No watched addresses\\. Use /watch to add one\\.', { parse_mode: 'MarkdownV2' });
+      }
+      const alertsOn = await getAlerts(chatId);
+      const lines = addresses.map((a, i) => `${i + 1}\\. \`${esc(a.slice(0, 16))}\\.\\.\\.\``);
+      await ctx.reply(
+        '\ud83d\udccd *Your Watchlist* \\(' + addresses.length + '/5\\)\n\n'
+        + lines.join('\n') + '\n\n'
+        + 'Alerts: ' + (alertsOn ? '\u2705 ON' : '\u274c OFF')
+        + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch { await ctx.reply('\u274c Failed to fetch watchlist'); }
+  });
+
+  b.command('alerts', async (ctx) => {
+    const arg = ctx.match?.trim().toLowerCase();
+    if (arg !== 'on' && arg !== 'off') {
+      return ctx.reply('Usage: /alerts on  or  /alerts off');
+    }
+    try {
+      const chatId = String(ctx.chat.id);
+      await setAlerts(chatId, arg === 'on');
+      await ctx.reply(arg === 'on' ? '\u2705 Alerts enabled — you\'ll get DMs when watched balances change' : '\u274c Alerts disabled');
+    } catch { await ctx.reply('\u274c Failed to update alerts'); }
   });
 
   b.on('inline_query', async (ctx) => {
