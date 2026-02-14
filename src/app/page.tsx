@@ -205,7 +205,7 @@ export default async function Home() {
         <div style={{ background: '#0a0f1f', border: '1px solid #1a2a4a', borderRadius: '12px', padding: '28px', textAlign: 'center' as const }}>
           <h2 style={{ fontSize: '18px', color: '#fff', margin: '0 0 4px 0' }}>Never Miss a Whale Move</h2>
           <p style={{ color: '#888', fontSize: '14px', margin: '0 0 16px 0' }}>Weekly Bitcoin intelligence — whale alerts, fee trends, risk signals</p>
-          <form action="https://app.beehiiv.com/forms" method="POST" style={{ display: 'inline-flex', gap: '8px' }}>
+          <form action="https://magic.beehiiv.com/v1/bc0d7f7c-aae5-4ca8-9774-d186d626070b" method="GET" style={{ display: 'inline-flex', gap: '8px' }}>
             <input type="email" name="email" placeholder="your@email.com" required style={{ background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', width: '240px' }} />
             <button type="submit" style={{ background: '#f7931a', color: '#000', border: 'none', borderRadius: '6px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Subscribe</button>
           </form>
