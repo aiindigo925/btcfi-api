@@ -23,6 +23,10 @@ const FOOTER =
   '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n' +
   '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
 
+// Plain footer for non-markdown responses
+const PLAIN_FOOTER =
+  '\n\n—\n💡 btcfi.aiindigo.com | @BTC_Fi_Bot | @BTCFi_Whales\nAI Indigo | FutureTools AI | OpenClaw Terrace';
+
 // Footer for channel posts
 const CH_FOOTER =
   '\n\n\u2014\n' +
@@ -161,8 +165,8 @@ function registerCommands(b: Bot): void {
     + '/unwatch `<addr>` \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
     + '/alerts `on|off` \u2014 Toggle DM alerts\n'
-    + '/help \u2014 This message\n\n'
-    + '_Powered by_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com)',
+    + '/help \u2014 This message'
+    + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
 
@@ -179,7 +183,8 @@ function registerCommands(b: Bot): void {
     + '`/watch bc1q...` \u2014 Watch address\n'
     + '`/unwatch bc1q...` \u2014 Stop watching\n'
     + '`/watchlist` \u2014 Your watched addresses\n'
-    + '`/alerts on\\|off` \u2014 Toggle DM alerts',
+    + '`/alerts on\\|off` \u2014 Toggle DM alerts'
+    + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
 
@@ -375,7 +380,7 @@ function registerCommands(b: Bot): void {
     try {
       const chatId = String(ctx.chat.id);
       const result = await addWatch(chatId, addr);
-      await ctx.reply(result.ok ? '\u2705 ' + result.message : '\u274c ' + result.message);
+      await ctx.reply((result.ok ? '\u2705 ' + result.message : '\u274c ' + result.message) + PLAIN_FOOTER);
     } catch { await ctx.reply('\u274c Failed to add watch'); }
   });
 
@@ -387,7 +392,7 @@ function registerCommands(b: Bot): void {
     try {
       const chatId = String(ctx.chat.id);
       const result = await removeWatch(chatId, addr);
-      await ctx.reply('\u2705 ' + result.message);
+      await ctx.reply('\u2705 ' + result.message + PLAIN_FOOTER);
     } catch { await ctx.reply('\u274c Failed to remove watch'); }
   });
 
@@ -418,7 +423,7 @@ function registerCommands(b: Bot): void {
     try {
       const chatId = String(ctx.chat.id);
       await setAlerts(chatId, arg === 'on');
-      await ctx.reply(arg === 'on' ? '\u2705 Alerts enabled — you\'ll get DMs when watched balances change' : '\u274c Alerts disabled');
+      await ctx.reply((arg === 'on' ? '\u2705 Alerts enabled — you\'ll get DMs when watched balances change' : '\u274c Alerts disabled') + PLAIN_FOOTER);
     } catch { await ctx.reply('\u274c Failed to update alerts'); }
   });
 
