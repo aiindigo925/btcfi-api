@@ -92,6 +92,30 @@ export default async function Home() {
         </div>
       </div>
 
+      {/* ═══ TELEGRAM BOT — PRIMARY PORTAL ═══ */}
+      <div style={{ marginBottom: '12px' }}>
+        <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: '10px', padding: '16px 24px', textDecoration: 'none' }}>
+          <span style={{ fontSize: '28px' }}>🤖</span>
+          <div>
+            <div style={{ color: '#4ade80', fontSize: '16px', fontWeight: 700 }}>@BTC_Fi_Bot — Free Bitcoin Bot on Telegram</div>
+            <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>15 commands · /price /fees /whale /risk /watch + more · No signup needed</div>
+          </div>
+          <span style={{ color: '#4ade80', fontSize: '14px', fontWeight: 600, marginLeft: 'auto' }}>Open →</span>
+        </a>
+      </div>
+
+      {/* ═══ WHALE ALERTS CHANNEL ═══ */}
+      <div style={{ marginBottom: '48px' }}>
+        <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: '#0f0a1a', border: '1px solid #2a1a4a', borderRadius: '10px', padding: '14px 24px', textDecoration: 'none' }}>
+          <span style={{ fontSize: '24px' }}>🐋</span>
+          <div>
+            <div style={{ color: '#c084fc', fontSize: '15px', fontWeight: 700 }}>@BTCFi_Whales — Live Whale Alerts Channel</div>
+            <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>Real-time whale transactions every 15 min · Buy/sell signals · Just join</div>
+          </div>
+          <span style={{ color: '#c084fc', fontSize: '14px', fontWeight: 600, marginLeft: 'auto' }}>Join →</span>
+        </a>
+      </div>
+
       {/* ═══ 2. FREE FOR HUMANS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Free for Humans <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>no signup</span></h2>
