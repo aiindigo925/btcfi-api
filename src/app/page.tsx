@@ -71,7 +71,8 @@ export default async function Home() {
       <div style={css.hero}>
         <h1 style={css.title}>₿ BTCFi API</h1>
         <p style={css.subtitle}>Bitcoin + BTCFi data for AI agents via x402 micropayments</p>
-        <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 24px 0' }}>Free for humans: <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTC_Fi_Bot</a> on Telegram · Whale alerts on <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTCFi_Whales</a> · No signup needed</p>
+        <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 12px 0' }}>Free for humans: <a href="https://t.me/BTC_Fi_Bot" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTC_Fi_Bot</a> on Telegram · Whale alerts on <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ color: '#f7931a', textDecoration: 'none' }}>@BTCFi_Whales</a> · No signup needed</p>
+        <p style={{ margin: '0 0 24px 0' }}><a href="/safe" style={{ color: '#4ade80', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>🔒 Is My Bitcoin Safe? → Free address checker</a></p>
         <div style={css.live}>
           <span><span style={css.liveLabel}>Block </span><span style={css.liveValue}>#{blockHeight.toLocaleString()}</span></span>
           <span><span style={css.liveLabel}>BTC </span><span style={css.liveValue}>${btcPrice.USD.toLocaleString()}</span></span>

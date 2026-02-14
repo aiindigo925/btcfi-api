@@ -82,6 +82,7 @@ const FREE_PATHS = [
   '/api/docs',
   '/api/cron',
   '/api/telegram',
+  '/api/v1/safe',
 ];
 
 /** Paths that don't go through middleware at all */
@@ -112,8 +113,8 @@ export async function middleware(request: NextRequest) {
   // Skip static assets and non-API paths
   if (shouldSkip(pathname)) return NextResponse.next();
 
-  // Dashboard and docs pages — pass through
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/docs') || pathname === '/') {
+  // Dashboard, docs, and safe pages — pass through
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/docs') || pathname.startsWith('/safe') || pathname === '/') {
     return NextResponse.next();
   }
 
