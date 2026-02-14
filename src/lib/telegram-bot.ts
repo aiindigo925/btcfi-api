@@ -330,6 +330,41 @@ function registerCommands(b: Bot): void {
     } catch { await ctx.reply('\u274c Network health unavailable'); }
   });
 
+  // ============ MULTI-CHAIN COMMANDS (MP5 Phase 8) ============
+
+  b.command('eth_gas', async (ctx) => {
+    try {
+      const data = await api('/api/v1/eth/gas');
+      const d = data.data || {};
+      await ctx.reply(
+        '\u26fd *ETH Gas*\n\n'
+        + '\ud83d\udcb0 Gas Price: ' + esc(d.gasPrice?.gwei || '\u2014') + ' gwei\n'
+        + '\ud83c\udfe0 Base Fee: ' + esc(d.baseFee?.gwei || '\u2014') + ' gwei\n'
+        + '\ud83d\ude80 Max Fee: ' + esc(d.maxFeePerGas?.gwei || '\u2014') + ' gwei\n'
+        + '\u2699\ufe0f Priority: ' + esc(d.maxPriorityFeePerGas?.gwei || '\u2014') + ' gwei\n'
+        + '\ud83d\udce6 Block: ' + (d.blockNumber || '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch { await ctx.reply('\u274c Failed to fetch ETH gas'); }
+  });
+
+  b.command('sol_fees', async (ctx) => {
+    try {
+      const data = await api('/api/v1/sol/fees');
+      const d = data.data || {};
+      const pf = d.priorityFees || {};
+      await ctx.reply(
+        '\u26a1 *SOL Fees*\n\n'
+        + '\ud83d\udcca Median Priority: ' + esc(pf.median || '\u2014') + '\n'
+        + '\ud83d\udcc8 P75 Priority: ' + esc(pf.p75 || '\u2014') + '\n'
+        + '\ud83c\udfaf Base Fee: ' + esc(d.baseFee || '\u2014') + '\n'
+        + '\ud83d\ude80 TPS: ' + (d.tps || '\u2014') + '\n'
+        + '\ud83d\udce6 Slot: ' + (d.slot || '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch { await ctx.reply('\u274c Failed to fetch SOL fees'); }
+  });
+
   // ============ WATCHLIST COMMANDS (MP5 Phase 5) ============
 
   b.command('watch', async (ctx) => {
