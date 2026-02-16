@@ -8,11 +8,11 @@ import { getSolanaRpc } from '@/lib/rpc';
 import WhaleFeed from '@/components/WhaleFeed';
 
 const css = {
-  container: { maxWidth: '900px', margin: '0 auto', padding: '40px 24px' } as React.CSSProperties,
+  container: { maxWidth: '900px', margin: '0 auto', padding: '40px 24px', overflowX: 'hidden' } as React.CSSProperties,
   hero: { textAlign: 'center' as const, marginBottom: '48px', paddingTop: '40px' },
-  title: { fontSize: '48px', fontWeight: 700, color: '#f7931a', margin: '0 0 8px 0', letterSpacing: '-1px' },
+  title: { fontSize: 'clamp(32px, 8vw, 48px)', fontWeight: 700, color: '#f7931a', margin: '0 0 8px 0', letterSpacing: '-1px' },
   subtitle: { fontSize: '18px', color: '#888', margin: '0 0 24px 0', fontWeight: 400 },
-  live: { display: 'inline-flex', gap: '24px', background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '12px 24px', fontSize: '14px' },
+  live: { display: 'inline-flex', gap: '24px', background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '12px 24px', fontSize: '14px', flexWrap: 'wrap' as const, justifyContent: 'center', maxWidth: '100%' },
   liveLabel: { color: '#666' },
   liveValue: { color: '#f7931a', fontWeight: 600 },
   section: { marginBottom: '48px' },
@@ -22,7 +22,7 @@ const css = {
   endpoint: { fontSize: '13px', color: '#f7931a', fontFamily: 'monospace', marginBottom: '4px' },
   desc: { fontSize: '13px', color: '#888', margin: 0 },
   price: { fontSize: '12px', color: '#4ade80', marginTop: '8px', display: 'inline-block', background: '#0a1f0a', padding: '2px 8px', borderRadius: '4px' },
-  code: { background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '16px', fontSize: '13px', color: '#ccc', overflowX: 'auto' as const, whiteSpace: 'pre' as const },
+  code: { background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '16px', fontSize: '13px', color: '#ccc', overflowX: 'auto' as const, whiteSpace: 'pre' as const, maxWidth: '100%' },
   link: { color: '#f7931a', textDecoration: 'none' },
   badge: { display: 'inline-block', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' },
   footer: { textAlign: 'center' as const, color: '#444', fontSize: '13px', borderTop: '1px solid #1a1a1a', paddingTop: '24px', marginTop: '60px' },
@@ -100,13 +100,13 @@ export default async function Home() {
             <div style={{ color: '#4ade80', fontSize: '16px', fontWeight: 700 }}>@BTC_Fi_Bot — Free Bitcoin Bot on Telegram</div>
             <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>15 commands · /price /fees /whale /risk /watch + more · No signup needed</div>
           </div>
-          <span style={{ color: '#4ade80', fontSize: '14px', fontWeight: 600, marginLeft: 'auto' }}>Open →</span>
+          <span style={{ color: '#4ade80', fontSize: '14px', fontWeight: 600, marginLeft: 'auto', whiteSpace: 'nowrap' }}>Open →</span>
         </a>
       </div>
 
       {/* ═══ WHALE ALERTS CHANNEL ═══ */}
       <div style={{ marginBottom: '48px' }}>
-        <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: '#0f0a1a', border: '1px solid #2a1a4a', borderRadius: '10px', padding: '14px 24px', textDecoration: 'none' }}>
+        <a href="https://t.me/BTCFi_Whales" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: '#0f0a1a', border: '1px solid #2a1a4a', borderRadius: '10px', padding: '14px 24px', textDecoration: 'none', flexWrap: 'wrap' as const }}>
           <span style={{ fontSize: '24px' }}>🐋</span>
           <div>
             <div style={{ color: '#c084fc', fontSize: '15px', fontWeight: 700 }}>@BTCFi_Whales — Live Whale Alerts Channel</div>
@@ -119,7 +119,7 @@ export default async function Home() {
       {/* ═══ 2. FREE FOR HUMANS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Free for Humans <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>no signup</span></h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
           <div style={css.card}>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
             <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Dashboard</div>
@@ -184,7 +184,7 @@ export default async function Home() {
 
       {/* ═══ 5. SOCIAL PROOF ═══ */}
       <div style={css.section}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', textAlign: 'center' as const }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', textAlign: 'center' as const }}>
           <div style={{ ...css.card, padding: '20px' }}>
             <div style={{ fontSize: '28px', color: '#f7931a', fontWeight: 700 }}>10,000+</div>
             <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>addresses checked</div>
@@ -205,8 +205,8 @@ export default async function Home() {
         <div style={{ background: '#0a0f1f', border: '1px solid #1a2a4a', borderRadius: '12px', padding: '28px', textAlign: 'center' as const }}>
           <h2 style={{ fontSize: '18px', color: '#fff', margin: '0 0 4px 0' }}>Never Miss a Whale Move</h2>
           <p style={{ color: '#888', fontSize: '14px', margin: '0 0 16px 0' }}>Weekly Bitcoin intelligence — whale alerts, fee trends, risk signals</p>
-          <form action="https://magic.beehiiv.com/v1/bc0d7f7c-aae5-4ca8-9774-d186d626070b" method="GET" style={{ display: 'inline-flex', gap: '8px' }}>
-            <input type="email" name="email" placeholder="your@email.com" required style={{ background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', width: '240px' }} />
+          <form action="https://magic.beehiiv.com/v1/bc0d7f7c-aae5-4ca8-9774-d186d626070b" method="GET" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' as const, justifyContent: 'center', maxWidth: '100%' }}>
+            <input type="email" name="email" placeholder="your@email.com" required style={{ background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '6px', padding: '10px 16px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', width: '240px', maxWidth: '100%', minWidth: '0' }} />
             <button type="submit" style={{ background: '#f7931a', color: '#000', border: 'none', borderRadius: '6px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Subscribe</button>
           </form>
           <p style={{ color: '#444', fontSize: '11px', margin: '10px 0 0 0' }}>Free forever · No spam · Unsubscribe anytime</p>
@@ -248,7 +248,7 @@ curl -H "X-Payment: <proof>" \\
       {/* ═══ 9. PAYMENT NETWORKS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Payment Networks</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
           <div style={css.card}>
             <div style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>🔵 Base (Coinbase)</div>
             <p style={css.desc}>ERC-3009 USDC settlement. Fee-free via Coinbase facilitator.</p>
@@ -301,7 +301,7 @@ Decentralized RPC via Whistle Network`}</div>
       {/* ═══ 12. DEV TOOLS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Developer Tools</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
           <a href="/api/docs" style={{ ...css.card, textDecoration: 'none' }}>
             <div style={{ color: '#4ade80', fontSize: '13px', fontWeight: 600 }}>📖 Interactive Docs</div>
             <p style={{ ...css.desc, marginTop: '4px' }}>OpenAPI 3.1 + Swagger UI</p>

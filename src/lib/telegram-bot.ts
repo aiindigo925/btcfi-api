@@ -30,7 +30,9 @@ const PLAIN_FOOTER =
 // Footer for channel posts
 const CH_FOOTER =
   '\n\n\u2014\n' +
-  '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot) _\\|_ Free for humans';
+  '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n' +
+  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)\n' +
+  '_Free for humans_';
 
 // Lazy singleton
 let _bot: Bot | null = null;
@@ -44,6 +46,22 @@ async function getBot(): Promise<Bot> {
   }
   if (!_initialized) {
     await _bot.init();
+    // Register commands with Telegram so they appear in the native / menu
+    await _bot.api.setMyCommands([
+      { command: 'price', description: 'Live BTC price' },
+      { command: 'fees', description: 'Fee recommendations' },
+      { command: 'mempool', description: 'Mempool summary' },
+      { command: 'address', description: 'Balance & stats' },
+      { command: 'tx', description: 'TX details' },
+      { command: 'whale', description: 'Whale alert feed' },
+      { command: 'risk', description: 'Risk analysis' },
+      { command: 'network', description: 'Network health' },
+      { command: 'watch', description: 'Watch address' },
+      { command: 'unwatch', description: 'Stop watching' },
+      { command: 'watchlist', description: 'Your watched addresses' },
+      { command: 'alerts', description: 'Toggle DM alerts' },
+      { command: 'help', description: 'Show all commands' },
+    ]).catch(() => { /* ignore if already set */ });
     _initialized = true;
   }
   return _bot;
@@ -156,15 +174,15 @@ function registerCommands(b: Bot): void {
     + '/price \u2014 BTC price\n'
     + '/fees \u2014 Fee estimates\n'
     + '/mempool \u2014 Mempool status\n'
-    + '/address `<addr>` \u2014 Address info\n'
-    + '/tx `<txid>` \u2014 Transaction details\n'
+    + '/address \u2014 Address info\n'
+    + '/tx \u2014 Transaction details\n'
     + '/whale \u2014 Recent whale movements\n'
-    + '/risk `<addr>` \u2014 Address risk score\n'
+    + '/risk \u2014 Address risk score\n'
     + '/network \u2014 Network health\n'
-    + '/watch `<addr>` \u2014 Watch an address\n'
-    + '/unwatch `<addr>` \u2014 Stop watching\n'
+    + '/watch \u2014 Watch an address\n'
+    + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts `on|off` \u2014 Toggle DM alerts\n'
+    + '/alerts \u2014 Toggle DM alerts\n'
     + '/help \u2014 This message'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
@@ -172,18 +190,18 @@ function registerCommands(b: Bot): void {
 
   b.command('help', (ctx) => ctx.reply(
     '\u20bf *BTCFi Commands*\n\n'
-    + '`/price` \u2014 Live BTC price\n'
-    + '`/fees` \u2014 Fee recommendations\n'
-    + '`/mempool` \u2014 Mempool summary\n'
-    + '`/address bc1q...` \u2014 Balance & stats\n'
-    + '`/tx abc123...` \u2014 TX details\n'
-    + '`/whale` \u2014 Whale alert feed\n'
-    + '`/risk bc1q...` \u2014 Risk analysis\n'
-    + '`/network` \u2014 Network health\n'
-    + '`/watch bc1q...` \u2014 Watch address\n'
-    + '`/unwatch bc1q...` \u2014 Stop watching\n'
-    + '`/watchlist` \u2014 Your watched addresses\n'
-    + '`/alerts on\\|off` \u2014 Toggle DM alerts'
+    + '/price \u2014 Live BTC price\n'
+    + '/fees \u2014 Fee recommendations\n'
+    + '/mempool \u2014 Mempool summary\n'
+    + '/address \u2014 Balance & stats\n'
+    + '/tx \u2014 TX details\n'
+    + '/whale \u2014 Whale alert feed\n'
+    + '/risk \u2014 Risk analysis\n'
+    + '/network \u2014 Network health\n'
+    + '/watch \u2014 Watch address\n'
+    + '/unwatch \u2014 Stop watching\n'
+    + '/watchlist \u2014 Your watched addresses\n'
+    + '/alerts \u2014 Toggle DM alerts'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
