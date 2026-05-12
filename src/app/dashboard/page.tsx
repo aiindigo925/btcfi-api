@@ -10,7 +10,7 @@ const subValue = { color: '#888', fontSize: '12px', marginTop: '4px' };
 async function fetchAPI(path: string) {
   try {
     const base = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://btcfi.aiindigo.com';
-    const res = await fetch(`${base}${path}`, { next: { revalidate: 10 } });
+    const res = await fetch(`${base}${path}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return res.json();
   } catch { return null; }
