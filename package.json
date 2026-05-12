@@ -7,7 +7,9 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:lockfile": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https",
+    "security-audit": "npm audit && npm run lint:lockfile"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@types/node": "22.10.0",
     "@types/react": "19.0.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "lockfile-lint": "4.14.1"
   }
 }
