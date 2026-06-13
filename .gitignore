@@ -26,3 +26,4 @@ TASK-*.md
 
 # Build artifacts
 tsconfig.tsbuildinfo
+__pycache__/
