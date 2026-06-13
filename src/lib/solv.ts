@@ -50,8 +50,19 @@ interface CacheEntry<T> {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 const CACHE_TTL = 60_000; // 60 seconds
+let lastCacheSweep = Date.now();
+
+function sweepCache() {
+  const now = Date.now();
+  if (now - lastCacheSweep < 60_000) return;
+  lastCacheSweep = now;
+  for (const [key, entry] of cache) {
+    if (now > entry.expiresAt) cache.delete(key);
+  }
+}
 
 function getCached<T>(key: string): T | null {
+  sweepCache();
   const entry = cache.get(key);
   if (entry && Date.now() < entry.expiresAt) return entry.data as T;
   return null;

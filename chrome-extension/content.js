@@ -6,6 +6,15 @@
 const BTC_REGEX = /\b(bc1[a-zA-HJ-NP-Z0-9]{39,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b/g;
 const API = 'https://btcfi.aiindigo.com';
 const cache = new Map();
+const MAX_CACHE = 100;
+
+function cacheSet(key, value) {
+  if (cache.size >= MAX_CACHE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey) cache.delete(firstKey);
+  }
+  cache.set(key, value);
+}
 
 function createTooltip() {
   const tip = document.createElement('div');
@@ -42,7 +51,7 @@ async function showBalance(addr, x, y) {
         + `<div style="color:#888;font-size:10px;margin-top:4px">Click for full report</div>`
       : `<div style="color:#888">No data</div>`;
     tooltip.innerHTML = html;
-    cache.set(addr, html);
+    cacheSet(addr, html);
   } catch {
     tooltip.textContent = 'Failed to load';
   }
@@ -69,7 +78,8 @@ function scanPage() {
   const candidates = document.querySelectorAll('p, span, div, a, td, li, code, pre, h1, h2, h3, h4, h5, h6');
   matches.forEach(addr => {
     for (const el of candidates) {
-      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 && el.textContent?.includes(addr)) {
+      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 && el.textContent?.includes(addr) && !el.dataset.btcfiScanned) {
+        el.dataset.btcfiScanned = '1';
         el.style.cursor = 'help';
         el.style.borderBottom = '1px dashed #f7931a33';
         el.addEventListener('mouseenter', (e) => showBalance(addr, e.clientX, e.clientY));

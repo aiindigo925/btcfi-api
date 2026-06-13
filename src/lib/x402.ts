@@ -53,6 +53,7 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/tx/broadcast': 0.05,
   // Free
   '/api/v1/staking': 0,
+  '/api/v1/agent-skills': 0, // agent discovery
   '/api/v1': 0, // index
   '/api/v1/payment-test': 0, // dev-only, returns 404 in production
   '/api/health': 0,
@@ -84,7 +85,7 @@ export function getPriceForPath(pathname: string): number {
   // Exact match first
   if (ROUTE_PRICING[pathname] !== undefined) return ROUTE_PRICING[pathname];
   // Broadcast special case (must check before generic /tx)
-  if (pathname.includes('/broadcast')) return PRICING.broadcast;
+  if (pathname.startsWith('/api/v1/tx/broadcast')) return PRICING.broadcast;
   // Prefix match
   for (const [prefix, price] of Object.entries(ROUTE_PRICING)) {
     if (pathname.startsWith(prefix) && price > 0) return price;

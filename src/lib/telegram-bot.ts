@@ -448,11 +448,13 @@ function registerCommands(b: Bot): void {
 
   b.on('inline_query', async (ctx) => {
     // Rate limit: 10 inline queries per minute per user
-    const redis = getRedis();
-    const rlKey = `tg:inline:${ctx.from?.id}`;
-    const count = await redis.incr(rlKey);
-    if (count === 1) await redis.expire(rlKey, 60);
-    if (count > 10) return;
+    try {
+      const redis = getRedis();
+      const rlKey = `tg:inline:${ctx.from?.id}`;
+      const count = await redis.incr(rlKey);
+      if (count === 1) await redis.expire(rlKey, 60);
+      if (count > 10) return;
+    } catch { /* fail open — skip rate limit on Redis error */ }
 
     const query = ctx.inlineQuery.query.trim();
     if (!query || !looksLikeBtcAddress(query)) return;

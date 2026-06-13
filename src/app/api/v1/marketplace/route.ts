@@ -41,6 +41,9 @@ export async function POST(request: Request) {
 
     const redis = getRedis();
     const existing = (await redis.get('marketplace:listings') as any[]) || [];
+    if (existing.length >= 1000) {
+      return NextResponse.json({ success: false, error: 'Marketplace full (1000 max)' }, { status: 507 });
+    }
     existing.push(listing);
     await redis.set('marketplace:listings', JSON.stringify(existing));
 

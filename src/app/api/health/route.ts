@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     checks.solana_rpc = {
       status: rpcHealth.solana.status,
       latencyMs: rpcHealth.solana.latencyMs,
-      detail: rpcHealth.solana.url,
+      detail: 'Whistle Network',
     };
     for (const [chain, health] of Object.entries(rpcHealth.evm)) {
       checks[`evm_${chain}`] = {

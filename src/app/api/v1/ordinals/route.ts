@@ -14,6 +14,9 @@ export async function GET(request: Request) {
     const ticker = url.searchParams.get('ticker');
 
     if (ticker) {
+      if (!/^[a-zA-Z0-9-]+$/.test(ticker)) {
+        return NextResponse.json({ success: false, error: 'Invalid ticker format' }, { status: 400 });
+      }
       const token = await getBRC20Token(ticker);
       if (!token) {
         return NextResponse.json({ success: false, error: 'Token not found' }, { status: 404 });

@@ -19,7 +19,16 @@ async function checkEndpoint(url: string, timeout = 5000): Promise<{ ok: boolean
   }
 }
 
-export async function GET() {
+const CRON_SECRET = process.env.CRON_SECRET || '';
+
+export async function GET(request: Request) {
+  if (CRON_SECRET) {
+    const auth = request.headers.get('authorization');
+    if (auth !== `Bearer ${CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  }
+
   const base = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : 'https://btcfi.aiindigo.com';

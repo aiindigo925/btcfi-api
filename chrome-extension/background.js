@@ -72,17 +72,16 @@ chrome.runtime.onInstalled.addListener(() => {
   updateBadge();
 });
 
-chrome.contextMenus.onClicked.addListener(async (info) => {
+chrome.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === 'btcfi-lookup' && info.selectionText) {
     const text = info.selectionText.trim();
     // BTC address check
     if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(text)) {
-      const api = await getApiUrl();
-      chrome.tabs.create({ url: `${api}/safe?addr=${encodeURIComponent(text)}` });
+      getApiUrl().then(api => chrome.tabs.create({ url: `${api}/safe?addr=${encodeURIComponent(text)}` })).catch(() => {});
     } else if (/^[a-fA-F0-9]{64}$/.test(text)) {
-      chrome.tabs.create({ url: `${(await getApiUrl())}/dashboard/address?txid=${encodeURIComponent(text)}` });
+      getApiUrl().then(api => chrome.tabs.create({ url: `${api}/dashboard/address?txid=${encodeURIComponent(text)}` })).catch(() => {});
     } else {
-      chrome.tabs.create({ url: `${(await getApiUrl())}/dashboard/address` });
+      getApiUrl().then(api => chrome.tabs.create({ url: `${api}/dashboard/address` })).catch(() => {});
     }
   }
 });

@@ -12,8 +12,11 @@ const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
 
 export async function GET(request: NextRequest) {
   // Verify internal caller — X-Internal-Key only (Referer is spoofable, removed)
+  if (!INTERNAL_KEY) {
+    return NextResponse.json({ error: 'INTERNAL_API_KEY not configured' }, { status: 501 });
+  }
   const internalKey = request.headers.get('X-Internal-Key');
-  if (INTERNAL_KEY && internalKey !== INTERNAL_KEY) {
+  if (internalKey !== INTERNAL_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

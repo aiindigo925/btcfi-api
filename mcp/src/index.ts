@@ -490,7 +490,7 @@ async function callApi(tool: ToolDef, args: Record<string, unknown>): Promise<st
 const server = new Server(
   {
     name: 'btcfi',
-    version: '1.0.0',
+    version: '3.0.0',
   },
   {
     capabilities: {

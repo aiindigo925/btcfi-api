@@ -3,8 +3,6 @@
  * Bitcoin-native NFT and token protocol data.
  */
 
-import { NextResponse } from 'next/server';
-
 const HIRO_API = 'https://api.hiro.so';
 
 export interface OrdinalsStats {

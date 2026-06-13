@@ -3,7 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getNetworkHealth } from '@/lib/intelligence';
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const health = await getNetworkHealth();
     return NextResponse.json({

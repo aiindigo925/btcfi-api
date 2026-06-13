@@ -195,8 +195,18 @@ export function createFreeTier402(pathname: string, category: FreeTierCategory):
 // In-memory rate limiter for free tier (per-IP, per-hour)
 // In production, this uses Upstash Redis (same pattern as main middleware)
 const freeTierCounts = new Map<string, { count: number; resetAt: number }>();
-
 const FREE_TIER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const SWEEP_INTERVAL_MS = 10 * 60 * 1000; // 10 min
+let lastSweep = Date.now();
+
+function sweepExpiredEntries() {
+  const now = Date.now();
+  if (now - lastSweep < SWEEP_INTERVAL_MS) return;
+  lastSweep = now;
+  for (const [key, entry] of freeTierCounts) {
+    if (now > entry.resetAt) freeTierCounts.delete(key);
+  }
+}
 
 /**
  * Check if a free-tier request is within limits.
@@ -206,6 +216,7 @@ export function checkFreeTierLimit(
   ip: string,
   category: FreeTierCategory
 ): { allowed: boolean; remaining: number; resetAt: number } {
+  sweepExpiredEntries();
   const limit = getFreeTierLimit(category);
 
   // Discovery is unlimited

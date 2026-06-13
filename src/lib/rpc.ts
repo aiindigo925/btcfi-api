@@ -38,7 +38,8 @@ export function markSolanaRpcFailed(): void {
 /**
  * Make a JSON-RPC call to Solana
  */
-export async function solanaRpcCall(method: string, params: unknown[] = []): Promise<unknown> {
+export async function solanaRpcCall(method: string, params: unknown[] = [], _retries = 0): Promise<unknown> {
+  const MAX_RETRIES = 1;
   const rpcUrl = getSolanaRpc();
   try {
     const res = await fetch(rpcUrl, {
@@ -64,9 +65,9 @@ export async function solanaRpcCall(method: string, params: unknown[] = []): Pro
     return data.result;
   } catch (error) {
     // If primary failed, mark and retry with fallback
-    if (rpcUrl === SOLANA_RPC_PRIMARY) {
+    if (rpcUrl === SOLANA_RPC_PRIMARY && _retries < MAX_RETRIES) {
       markSolanaRpcFailed();
-      return solanaRpcCall(method, params); // retry once with fallback
+      return solanaRpcCall(method, params, _retries + 1);
     }
     throw error;
   }
@@ -135,6 +136,7 @@ export async function evmCall(
       method: 'eth_call',
       params: [{ to, data }, 'latest'],
     }),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) throw new Error(`${rpc.name} RPC ${res.status}`);

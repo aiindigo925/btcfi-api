@@ -53,7 +53,7 @@ export function generatePEACReceipt(
   responseBody: string
 ): string {
   if (!PEAC_SECRET) {
-    throw new Error('[PEAC] Cannot generate receipt: PEAC_SIGNING_KEY not configured');
+    return '';
   }
   const payload: PEACReceiptPayload = {
     v: PEAC_VERSION,
