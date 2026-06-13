@@ -13,11 +13,16 @@ const BEEHIIV_PUBLICATION_ID = process.env.BEEHIIV_PUBLICATION_ID || '';
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: max 5 subscriptions per IP per hour
-    const redis = getRedis();
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const key = `newsletter:ratelimit:${ip}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, 3600);
+    let count = 0;
+    try {
+      const redis = getRedis();
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const key = `newsletter:ratelimit:${ip}`;
+      count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, 3600);
+    } catch {
+      // Redis down — skip rate limiting, allow subscription
+    }
     if (count > 5) {
       return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
     }

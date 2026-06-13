@@ -71,12 +71,12 @@ export function buildSigningMessage(
 /**
  * Check if a nonce has been used (replay protection)
  */
-function checkNonce(nonce: string): boolean {
+async function checkNonce(nonce: string): Promise<boolean> {
   try {
     const redis = getRedis();
     const nonceKey = `nonce:${nonce}`;
     // SET NX = only set if not exists; EX 300 = 5-minute TTL
-    const added = redis.set(nonceKey, '1', { ex: 300, nx: true });
+    const added = await redis.set(nonceKey, '1', { ex: 300, nx: true });
     return !!added; // falsy means key already existed = replay
   } catch (error) {
     console.error('[request-signing] Redis nonce check failed, rejecting:', error);
@@ -217,7 +217,7 @@ export async function verifyRequestSignature(
   }
 
   // Replay protection
-  if (!checkNonce(nonce)) {
+  if (!await checkNonce(nonce)) {
     return { valid: false, tier: 'free', reason: 'nonce_replayed' };
   }
 

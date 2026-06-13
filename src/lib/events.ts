@@ -103,7 +103,7 @@ export async function pollWhaleEvents(minBtc: number = 100): Promise<BTCFiEvent[
     const minSats = minBtc * 1e8;
 
     for (const tx of recent.slice(0, 20)) {
-      const totalOut = ((tx as any).vout || []).reduce((s: number, v: any) => s + (v.value || 0), 0);
+      const totalOut = tx.value || 0;
       if (totalOut >= minSats) {
         events.push({
           type: 'whale_tx',

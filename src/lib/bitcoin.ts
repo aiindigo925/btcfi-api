@@ -86,13 +86,13 @@ export interface Block {
 // ============ MEMPOOL ============
 
 export async function getMempoolSummary(): Promise<MempoolSummary> {
-  const res = await fetch(`${MEMPOOL_API}/mempool`);
+  const res = await fetch(`${MEMPOOL_API}/mempool`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch mempool summary');
   return res.json();
 }
 
 export async function getMempoolTxs(limit: number = 10): Promise<string[]> {
-  const res = await fetch(`${MEMPOOL_API}/mempool/txids`);
+  const res = await fetch(`${MEMPOOL_API}/mempool/txids`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch mempool txs');
   const txids: string[] = await res.json();
   return txids.slice(0, limit);
@@ -100,7 +100,7 @@ export async function getMempoolTxs(limit: number = 10): Promise<string[]> {
 
 /** mempool/recent returns simplified objects: { txid, fee, vsize, value } */
 export async function getMempoolRecent(): Promise<any[]> {
-  const res = await fetch(`${MEMPOOL_API}/mempool/recent`);
+  const res = await fetch(`${MEMPOOL_API}/mempool/recent`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch recent mempool txs');
   return res.json();
 }
@@ -108,7 +108,7 @@ export async function getMempoolRecent(): Promise<any[]> {
 // ============ FEES ============
 
 export async function getRecommendedFees(): Promise<RecommendedFees> {
-  const res = await fetch(`${MEMPOOL_API}/v1/fees/recommended`);
+  const res = await fetch(`${MEMPOOL_API}/v1/fees/recommended`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch recommended fees');
   return res.json();
 }
@@ -118,7 +118,7 @@ export async function getRecommendedFees(): Promise<RecommendedFees> {
  * (previously misnamed getFeeHistogram)
  */
 export async function getMempoolBlocks(): Promise<unknown[]> {
-  const res = await fetch(`${MEMPOOL_API}/v1/fees/mempool-blocks`);
+  const res = await fetch(`${MEMPOOL_API}/v1/fees/mempool-blocks`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch mempool blocks');
   return res.json();
 }
@@ -135,13 +135,13 @@ export async function getAddressInfo(address: string): Promise<AddressInfo> {
 }
 
 export async function getAddressUtxos(address: string): Promise<UTXO[]> {
-  const res = await fetch(`${MEMPOOL_API}/address/${address}/utxo`);
+  const res = await fetch(`${MEMPOOL_API}/address/${address}/utxo`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch UTXOs');
   return res.json();
 }
 
 export async function getAddressTxs(address: string): Promise<Transaction[]> {
-  const res = await fetch(`${MEMPOOL_API}/address/${address}/txs`);
+  const res = await fetch(`${MEMPOOL_API}/address/${address}/txs`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch address txs');
   return res.json();
 }
@@ -149,19 +149,20 @@ export async function getAddressTxs(address: string): Promise<Transaction[]> {
 // ============ TRANSACTION ============
 
 export async function getTransaction(txid: string): Promise<Transaction> {
-  const res = await fetch(`${MEMPOOL_API}/tx/${txid}`);
+  const res = await fetch(`${MEMPOOL_API}/tx/${txid}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Transaction not found');
   return res.json();
 }
 
 export async function getTxStatus(txid: string): Promise<Transaction['status']> {
-  const res = await fetch(`${MEMPOOL_API}/tx/${txid}/status`);
+  const res = await fetch(`${MEMPOOL_API}/tx/${txid}/status`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch tx status');
   return res.json();
 }
 
 export async function broadcastTx(txHex: string): Promise<string> {
   const res = await fetch(`${MEMPOOL_API}/tx`, {
+    signal: AbortSignal.timeout(10000),
     method: 'POST',
     body: txHex,
   });
@@ -175,13 +176,13 @@ export async function broadcastTx(txHex: string): Promise<string> {
 // ============ BLOCKS ============
 
 export async function getBlockHeight(): Promise<number> {
-  const res = await fetch(`${MEMPOOL_API}/blocks/tip/height`);
+  const res = await fetch(`${MEMPOOL_API}/blocks/tip/height`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch block height');
   return parseInt(await res.text());
 }
 
 export async function getBlockHash(height: number): Promise<string> {
-  const res = await fetch(`${MEMPOOL_API}/block-height/${height}`);
+  const res = await fetch(`${MEMPOOL_API}/block-height/${height}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch block hash');
   return res.text();
 }
@@ -191,13 +192,13 @@ export async function getBlock(hashOrHeight: string | number): Promise<Block> {
   if (typeof hashOrHeight === 'number') {
     hash = await getBlockHash(hashOrHeight);
   }
-  const res = await fetch(`${MEMPOOL_API}/block/${hash}`);
+  const res = await fetch(`${MEMPOOL_API}/block/${hash}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Block not found');
   return res.json();
 }
 
 export async function getLatestBlocks(limit: number = 10): Promise<Block[]> {
-  const res = await fetch(`${MEMPOOL_API}/v1/blocks`);
+  const res = await fetch(`${MEMPOOL_API}/v1/blocks`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch blocks');
   const blocks: Block[] = await res.json();
   return blocks.slice(0, limit);
@@ -210,7 +211,7 @@ export async function getLatestBlocks(limit: number = 10): Promise<Block[]> {
  * Used by zk.ts and other modules that need raw endpoint access.
  */
 export async function fetchBitcoinData(path: string): Promise<any> {
-  const res = await fetch(`${MEMPOOL_API}${path}`);
+  const res = await fetch(`${MEMPOOL_API}${path}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`mempool.space ${path} returned ${res.status}`);
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) return res.json();

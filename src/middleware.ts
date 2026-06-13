@@ -56,7 +56,7 @@ async function checkRateLimit(ip: string, tier: SignerTier): Promise<{ allowed: 
 
 // ============ CORS & SECURITY HEADERS ============
 
-const ALLOWED_ORIGINS = ['https://btcfi.aiindigo.com', 'http://localhost:3000'];
+const ALLOWED_ORIGINS = ['https://btcfi.aiindigo.com', 'http://localhost:3000', 'http://localhost:3001'];
 function getCorsHeaders(request: NextRequest): Record<string, string> {
   const origin = request.headers.get('origin') || '';
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -86,7 +86,6 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 /** Paths that skip x402 payment entirely */
 const FREE_PATHS = [
   '/api/health',
-  '/api/v1',
   '/api/v1/staking',
   '/api/v1/payment-test',
   '/api/admin',
