@@ -15,3 +15,14 @@ mcp/mcp-publisher.exe
 # Internal state — lives in btcfi-docs (private)
 SESSION-STATE.md
 CLAUDE.md
+
+# Audit / report files (generated, not committed)
+BUG-*.md
+SCC-*.md
+QUALITY-*.md
+RE-AUDIT-*.md
+GAP-ANALYSIS-*.md
+TASK-*.md
+
+# Build artifacts
+tsconfig.tsbuildinfo

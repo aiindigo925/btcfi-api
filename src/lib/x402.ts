@@ -54,6 +54,20 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/zk': 0.03,
   // Streams ($0.01)
   '/api/v1/stream': 0.01,
+  // Price Oracle ($0.01)
+  '/api/v1/price': 0.01,
+  // Mining Analytics ($0.02)
+  '/api/v1/intelligence/mining': 0.02,
+  // Portfolio Analytics ($0.03)
+  '/api/v1/intelligence/portfolio': 0.03,
+  // Alerts ($0.01/triggered)
+  '/api/v1/alerts': 0.01,
+  // Composite Signal — Premium ($0.05)
+  '/api/v1/intelligence/signal': 0.05,
+  // Mempool Intelligence ($0.02)
+  '/api/v1/intelligence/mempool-intel': 0.02,
+  // Historical Data ($0.03)
+  '/api/v1/intelligence/history': 0.03,
 };
 
 /**
