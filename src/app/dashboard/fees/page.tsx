@@ -8,10 +8,24 @@ export default function FeesPage() {
   const [txSize, setTxSize] = useState(250);
   const [fees, setFees] = useState<any>(null);
   const [prediction, setPrediction] = useState<any>(null);
+  const [feesError, setFeesError] = useState('');
+  const [predictionError, setPredictionError] = useState('');
 
   useEffect(() => {
-    fetch(`${API}/api/v1/fees`).then(r => r.json()).then(setFees).catch(() => {});
-    fetch(`${API}/api/v1/intelligence/fees`).then(r => r.json()).then(d => setPrediction(d.data || d)).catch(() => {});
+    fetch(`${API}/api/v1/fees`)
+      .then(r => {
+        if (!r.ok) throw new Error(`Fees API failed (${r.status})`);
+        return r.json();
+      })
+      .then(setFees)
+      .catch((e: Error) => setFeesError(e.message || 'Failed to load fee data'));
+    fetch(`${API}/api/v1/intelligence/fees`)
+      .then(r => {
+        if (!r.ok) throw new Error(`Prediction API failed (${r.status})`);
+        return r.json();
+      })
+      .then(d => setPrediction(d.data || d))
+      .catch((e: Error) => setPredictionError(e.message || 'Failed to load AI predictions'));
   }, []);
 
   const card = { background: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', padding: '16px', marginBottom: '12px' };
@@ -49,6 +63,12 @@ export default function FeesPage() {
         </div>
       </div>
 
+      {feesError && (
+        <div style={{ ...card, border: '1px solid #ef444433' }}>
+          <div style={{ color: '#ef4444', fontSize: '13px' }}>⚠ {feesError}</div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '24px' }}>
         {tiers.map(t => {
           const fee = t.rate ? calcFee(t.rate) : null;
@@ -68,6 +88,12 @@ export default function FeesPage() {
           );
         })}
       </div>
+
+      {predictionError && (
+        <div style={{ ...card, border: '1px solid #ef444433' }}>
+          <div style={{ color: '#ef4444', fontSize: '13px' }}>⚠ AI predictions unavailable: {predictionError}</div>
+        </div>
+      )}
 
       {prediction && (
         <div style={card}>

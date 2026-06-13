@@ -32,13 +32,14 @@ export default function MyAddressesPage() {
     setAddressData(prev => ({ ...prev, [addr]: { address: addr, loading: true } }));
     try {
       const [balRes, riskRes] = await Promise.all([
-        fetch(`/api/v1/safe?addr=${encodeURIComponent(addr)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`/api/v1/address/${encodeURIComponent(addr)}`).then(r => r.ok ? r.json() : null).catch(() => null),
         fetch(`/api/v1/safe?addr=${encodeURIComponent(addr)}`).then(r => r.ok ? r.json() : null).catch(() => null),
       ]);
       setAddressData(prev => ({
         ...prev,
         [addr]: {
           address: addr,
+          balance: balRes?.balance || undefined,
           risk: riskRes?.data ? { overallScore: riskRes.data.overallScore, threatLevel: riskRes.data.threatLevel } : undefined,
           loading: false,
         },
@@ -123,6 +124,12 @@ export default function MyAddressesPage() {
               <div key={addr} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <code style={{ color: '#fff', fontSize: '13px', wordBreak: 'break-all' }}>{addr}</code>
+                  {data?.balance?.confirmed && (
+                    <div style={{ marginTop: '4px', fontSize: '13px' }}>
+                      <span style={{ color: '#f7931a', fontWeight: 600 }}>{data.balance.confirmed.btc || '0'} BTC</span>
+                      <span style={{ color: '#888', marginLeft: '8px' }}>{data.balance.confirmed.usd || '$0'}</span>
+                    </div>
+                  )}
                   {data?.risk && (
                     <div style={{ marginTop: '4px', fontSize: '12px' }}>
                       <span style={{ color: riskColor }}>Risk: {data.risk.overallScore}/100 ({data.risk.threatLevel})</span>

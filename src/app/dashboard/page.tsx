@@ -1,32 +1,47 @@
-/**
- * Dashboard Overview — live data from BTCFi API
- */
+'use client';
 
+import { useState, useEffect, useCallback } from 'react';
+
+const API = 'https://btcfi.aiindigo.com';
 const card = { background: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', padding: '16px' };
 const label = { color: '#666', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: '4px' };
 const value = { color: '#fff', fontSize: '20px', fontWeight: 600 };
 const subValue = { color: '#888', fontSize: '12px', marginTop: '4px' };
 
-async function fetchAPI(path: string) {
-  try {
-    const base = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://btcfi.aiindigo.com';
-    const res = await fetch(`${base}${path}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return res.json();
-  } catch { return null; }
-}
+interface FeesData { price?: { btcUsd?: number; btcEur?: number }; fees?: { recommended?: any }; estimate?: any; }
+interface MempoolData { mempool?: { count?: number; vsizeMB?: string }; feeHistogram?: [number, number][]; }
+interface NetworkData { congestion?: { label?: string; level?: number }; hashrateTrend?: string; }
 
-export default async function DashboardPage() {
-  const [feesData, mempoolData, networkData] = await Promise.all([
-    fetchAPI('/api/v1/fees'),
-    fetchAPI('/api/v1/mempool'),
-    fetchAPI('/api/v1/intelligence/network'),
-  ]);
+export default function DashboardPage() {
+  const [feesData, setFeesData] = useState<FeesData | null>(null);
+  const [mempoolData, setMempoolData] = useState<MempoolData | null>(null);
+  const [networkData, setNetworkData] = useState<NetworkData | null>(null);
+  const [lastRefresh, setLastRefresh] = useState('');
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [fRes, mRes, nRes] = await Promise.all([
+        fetch(`${API}/api/v1/fees`).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`${API}/api/v1/mempool`).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`${API}/api/v1/intelligence/network`).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+      if (fRes) setFeesData(fRes);
+      if (mRes) setMempoolData(mRes);
+      if (nRes) setNetworkData(nRes?.data || nRes);
+      setLastRefresh(new Date().toLocaleTimeString());
+    } catch { /* keep existing data */ }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const price = feesData?.price?.btcUsd || 0;
   const fees = feesData?.fees?.recommended || {};
   const mempool = mempoolData?.mempool || {};
-  const network = networkData?.data || networkData || {};
+  const network = networkData || {};
 
   return (
     <div>
@@ -78,7 +93,7 @@ export default async function DashboardPage() {
           <div style={{ ...label, marginBottom: '12px' }}>Fee Histogram</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
             {(mempoolData.feeHistogram as [number, number][]).slice(0, 20).map(([rate, vsize]: [number, number], i: number) => {
-              const maxVsize = Math.max(...mempoolData.feeHistogram.slice(0, 20).map(([, v]: [number, number]) => v));
+              const maxVsize = Math.max(...mempoolData.feeHistogram!.slice(0, 20).map(([, v]: [number, number]) => v));
               const height = maxVsize > 0 ? (vsize / maxVsize) * 100 : 0;
               return (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
@@ -93,7 +108,7 @@ export default async function DashboardPage() {
       )}
 
       <div style={{ marginTop: '16px', color: '#444', fontSize: '11px' }}>
-        Auto-refreshes every 10 seconds · Data from btcfi.aiindigo.com
+        Auto-refreshes every 10 seconds · Last update: {lastRefresh || 'loading...'} · Data from btcfi.aiindigo.com
       </div>
     </div>
   );

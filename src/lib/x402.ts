@@ -34,6 +34,10 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/block': 0.01,
   // Intelligence ($0.02)
   '/api/v1/intelligence': 0.02,
+  '/api/v1/intelligence/mvrv': 0.02,
+  '/api/v1/intelligence/sopr': 0.02,
+  '/api/v1/intelligence/nupl': 0.02,
+  '/api/v1/intelligence/hodl-waves': 0.02,
   // Security ($0.02)
   '/api/v1/security': 0.02,
   // Solv Protocol ($0.02)

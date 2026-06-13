@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 const API = 'https://btcfi.aiindigo.com';
+const BTC_REGEX = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/;
 
 export default function AddressPage() {
   const [addr, setAddr] = useState('');
@@ -12,17 +13,31 @@ export default function AddressPage() {
   const [error, setError] = useState('');
 
   async function lookup() {
-    if (!addr.trim()) return;
+    const trimmed = addr.trim();
+    if (!trimmed) return;
+
+    // Validate Bitcoin address format client-side
+    if (!BTC_REGEX.test(trimmed)) {
+      setError('Invalid Bitcoin address format. Must start with 1, 3, or bc1.');
+      return;
+    }
+
     setLoading(true); setError(''); setData(null); setRisk(null);
     try {
       const [addrRes, riskRes] = await Promise.all([
-        fetch(`${API}/api/v1/address/${addr.trim()}`).then(r => r.json()),
-        fetch(`${API}/api/v1/intelligence/risk/${addr.trim()}`).then(r => r.json()).catch(() => null),
+        fetch(`${API}/api/v1/address/${trimmed}`).then(r => {
+          if (!r.ok) throw new Error(`Address lookup failed (${r.status})`);
+          return r.json();
+        }),
+        fetch(`${API}/api/v1/intelligence/risk/${trimmed}`).then(r => {
+          if (!r.ok) return null;
+          return r.json();
+        }).catch(() => null),
       ]);
       setData(addrRes);
       setRisk(riskRes);
     } catch (e: any) {
-      setError(e.message || 'Failed');
+      setError(e.message || 'Failed to look up address');
     }
     setLoading(false);
   }
@@ -46,7 +61,17 @@ export default function AddressPage() {
         </button>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '12px' }}>{error}</div>}
+      {loading && (
+        <div style={{ ...card, textAlign: 'center', padding: '24px' }}>
+          <div style={{ color: '#f7931a', fontSize: '13px' }}>Analyzing address...</div>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ ...card, border: '1px solid #ef444433' }}>
+          <div style={{ color: '#ef4444', fontSize: '13px' }}>⚠ {error}</div>
+        </div>
+      )}
 
       {data && (
         <>
