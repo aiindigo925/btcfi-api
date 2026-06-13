@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   // 1. mempool.space
   try {
     const start = Date.now();
-    const res = await fetch('https://mempool.space/api/blocks/tip/height');
+    const res = await fetch('https://mempool.space/api/blocks/tip/height', { signal: AbortSignal.timeout(10000) });
     checks.mempool = {
       status: res.ok ? 'ok' : 'degraded',
       latencyMs: Date.now() - start,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   for (const [network, config] of Object.entries(FACILITATORS)) {
     try {
       const start = Date.now();
-      const res = await fetch(config.url, { method: 'HEAD' }).catch(() => null);
+      const res = await fetch(config.url, { method: 'HEAD', signal: AbortSignal.timeout(10000) }).catch(() => null);
       checks[`facilitator_${network}`] = {
         status: res ? 'reachable' : 'unreachable',
         latencyMs: Date.now() - start,

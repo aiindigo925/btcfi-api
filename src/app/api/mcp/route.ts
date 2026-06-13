@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
   // Call tool
   if (method === 'tools/call') {
     const toolName = (params as any)?.name;
+    if (!toolName || typeof toolName !== 'string') {
+      return NextResponse.json(jsonRpcError(id, -32602, 'Invalid tool name'), { status: 400 });
+    }
     const args = ((params as any)?.arguments || {}) as Record<string, unknown>;
     const tool = TOOLS.find(t => t.name === toolName);
 

@@ -27,6 +27,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+    if (contentLength > 102400) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+    }
     const body = await request.json();
     const { bot } = await import('@/lib/telegram-bot');
     await bot.handleUpdate(body);

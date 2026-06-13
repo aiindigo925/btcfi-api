@@ -6,7 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { create402Response, detectNetwork, FACILITATORS, PRICING, ROUTE_PRICING, getX402Status } from '@/lib/x402';
 
 export async function GET(request: NextRequest) {
-  if (process.env.NODE_ENV !== 'development') {
+  const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
+  const internalKey = request.headers.get('X-Internal-Key');
+  if (!INTERNAL_KEY || internalKey !== INTERNAL_KEY) {
     return NextResponse.json(
       { success: false, error: 'Not found', code: 'NOT_FOUND' },
       { status: 404 }

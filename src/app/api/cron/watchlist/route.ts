@@ -87,13 +87,13 @@ export async function GET(request: NextRequest) {
           try {
             await sendTelegramDM(chatId, msg);
             alerts++;
-          } catch {}
+          } catch (e) { /* individual address error — skip */ }
         }
 
         // Small delay between addresses
         await new Promise(r => setTimeout(r, 200));
-      } catch {
-        // Skip individual address errors
+      } catch (e) {
+        // individual address error — skip
       }
     }
 

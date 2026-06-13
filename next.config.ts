@@ -15,13 +15,6 @@ const nextConfig: NextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
         ],
       },
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'" },
-          // Cache-Control now set per-route in middleware (Task 17.6)
-        ],
-      },
     ];
   },
 

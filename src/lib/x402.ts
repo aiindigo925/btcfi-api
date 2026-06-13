@@ -165,14 +165,10 @@ export async function verifyPayment(
   const facilitator = FACILITATORS[network as keyof typeof FACILITATORS] || FACILITATORS.base;
   const amountBaseUnits = Math.floor(price * 1_000_000).toString();
 
-  // Dev mode: accept any well-formed payment
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      JSON.parse(Buffer.from(paymentHeader, 'base64').toString('utf8'));
-      return { valid: true, network };
-    } catch {
-      return { valid: false, reason: 'invalid_base64_json' };
-    }
+  // Explicit dev bypass — requires DEV_MODE_BYPASS=true (never in prod)
+  if (process.env.DEV_MODE_BYPASS === 'true') {
+    console.warn('[x402] DEV MODE BYPASS ACTIVE — payment verification disabled. Do NOT use in production.');
+    return { valid: true, network };
   }
 
   const requirements = {

@@ -34,9 +34,10 @@ export async function GET(request: NextRequest) {
       data: status,
       meta: { endpoint: 'staking-status', pricing: 'free' },
     });
-  } catch (error: any) {
+  } catch (err) {
+    console.error('[Staking] Error:', err);
     return NextResponse.json(
-      { success: false, error: 'Failed to check staking status', code: 'STAKE_CHECK_FAILED' },
+      { success: false, error: 'Failed to fetch staking status', code: 'STAKE_CHECK_FAILED' },
       { status: 500 }
     );
   }

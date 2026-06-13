@@ -11,6 +11,7 @@
 
 import { Bot } from 'grammy';
 import { addWatch, removeWatch, getWatchlist, setAlerts, getAlerts } from './watchlist';
+import { getRedis } from './redis';
 
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -446,6 +447,13 @@ function registerCommands(b: Bot): void {
   });
 
   b.on('inline_query', async (ctx) => {
+    // Rate limit: 10 inline queries per minute per user
+    const redis = getRedis();
+    const rlKey = `tg:inline:${ctx.from?.id}`;
+    const count = await redis.incr(rlKey);
+    if (count === 1) await redis.expire(rlKey, 60);
+    if (count > 10) return;
+
     const query = ctx.inlineQuery.query.trim();
     if (!query || !looksLikeBtcAddress(query)) return;
     try {

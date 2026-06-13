@@ -129,7 +129,7 @@ export const getFeeHistogram = getMempoolBlocks;
 // ============ ADDRESS ============
 
 export async function getAddressInfo(address: string): Promise<AddressInfo> {
-  const res = await fetch(`${MEMPOOL_API}/address/${address}`);
+  const res = await fetch(`${MEMPOOL_API}/address/${address}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch address info');
   return res.json();
 }
@@ -222,7 +222,7 @@ export async function fetchBitcoinData(path: string): Promise<any> {
 // ============ PRICE ============
 
 export async function getBtcPrice(): Promise<{ USD: number; EUR: number }> {
-  const res = await fetch(`${MEMPOOL_API}/v1/prices`);
+  const res = await fetch(`${MEMPOOL_API}/v1/prices`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch price');
   return res.json();
 }

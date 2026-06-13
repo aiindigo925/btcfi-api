@@ -17,11 +17,8 @@
  */
 
 import { isValidEvmAddress, isValidSolanaAddress } from './validation';
+import { getRedis } from './redis';
 
-// Nonce store — in-memory, resets on cold start (Vercel-appropriate)
-// Production upgrade: Redis or KV store
-const usedNonces = new Map<string, number>(); // nonce → timestamp
-const NONCE_TTL = 300_000; // 5 minutes
 const MAX_CLOCK_DRIFT = 60; // seconds
 
 // Rate limit tiers
@@ -75,17 +72,16 @@ export function buildSigningMessage(
  * Check if a nonce has been used (replay protection)
  */
 function checkNonce(nonce: string): boolean {
-  // Cleanup expired nonces periodically
-  const now = Date.now();
-  if (usedNonces.size > 10000) {
-    for (const [n, ts] of usedNonces) {
-      if (now - ts > NONCE_TTL) usedNonces.delete(n);
-    }
+  try {
+    const redis = getRedis();
+    const nonceKey = `nonce:${nonce}`;
+    // SET NX = only set if not exists; EX 300 = 5-minute TTL
+    const added = redis.set(nonceKey, '1', { ex: 300, nx: true });
+    return !!added; // falsy means key already existed = replay
+  } catch (error) {
+    console.error('[request-signing] Redis nonce check failed, rejecting:', error);
+    return false; // Fail closed
   }
-
-  if (usedNonces.has(nonce)) return false; // Replay!
-  usedNonces.set(nonce, now);
-  return true;
 }
 
 /**

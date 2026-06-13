@@ -73,7 +73,7 @@ const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'X-Powered-By': 'BTCFi API v3.0.0',
+  'X-Powered-By': 'BTCFi API',
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://btcfi.aiindigo.com;",
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
@@ -209,7 +209,7 @@ export async function middleware(request: NextRequest) {
   Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
 
   // Rate limit headers
-  response.headers.set('X-RateLimit-Limit', String(RATE_LIMITS[tier] === Infinity ? 'unlimited' : RATE_LIMITS[tier]));
+  response.headers.set('X-RateLimit-Limit', tier === 'paid' ? 'unlimited' : String(RATE_LIMITS[tier]));
   response.headers.set('X-RateLimit-Remaining', String(rateResult.remaining === Infinity ? 'unlimited' : rateResult.remaining));
   if (rateResult.resetAt > 0) {
     response.headers.set('X-RateLimit-Reset', String(Math.ceil(rateResult.resetAt / 1000)));
@@ -222,7 +222,7 @@ export async function middleware(request: NextRequest) {
       const amount = Math.floor(price * 1_000_000).toString();
       const receipt = generatePEACReceipt(pathname, amount, network, '');
       response.headers.set('X-PEAC-Receipt', receipt);
-    } catch {}
+    } catch (e) { console.error('[PEAC] Receipt error:', e); }
   }
 
   return response;

@@ -5,12 +5,23 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getRedis } from '@/lib/redis';
 
 const BEEHIIV_API_KEY = process.env.BEEHIIV_API_KEY || '';
 const BEEHIIV_PUBLICATION_ID = process.env.BEEHIIV_PUBLICATION_ID || '';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: max 5 subscriptions per IP per hour
+    const redis = getRedis();
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const key = `newsletter:ratelimit:${ip}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 3600);
+    if (count > 5) {
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const email = body.email?.trim()?.toLowerCase();
 
@@ -20,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (!BEEHIIV_API_KEY || !BEEHIIV_PUBLICATION_ID) {
       // Fallback: log subscription request
-      console.log(`[newsletter] Subscription request: ${email}`);
+      console.log(`[newsletter] Subscription request from IP: ${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}`);
       return NextResponse.json({
         success: true,
         message: 'Subscription recorded',
