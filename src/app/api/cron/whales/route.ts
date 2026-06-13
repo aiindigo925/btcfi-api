@@ -40,12 +40,10 @@ export async function GET(request: NextRequest) {
     for (const whale of whales.slice(0, 10)) {
       const key = `whale:seen:${whale.txid}`;
 
-      // Check if already posted
-      const seen = await redis.get(key);
-      if (seen) continue;
-
-      // Mark as seen with 24h TTL
-      await redis.set(key, '1', { ex: DEDUP_TTL });
+      // Atomic dedup: SET NX returns null if key already exists.
+      // This prevents race conditions from concurrent cron runs.
+      const wasSet = await redis.set(key, '1', { ex: DEDUP_TTL, nx: true });
+      if (!wasSet) continue;
 
       // Post to Telegram channel
       try {

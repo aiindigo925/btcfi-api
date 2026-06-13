@@ -50,6 +50,7 @@ export async function solanaRpcCall(method: string, params: unknown[] = []): Pro
         method,
         params,
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) {

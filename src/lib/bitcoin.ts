@@ -91,14 +91,6 @@ export async function getMempoolSummary(): Promise<MempoolSummary> {
   return res.json();
 }
 
-export async function getMempoolTxs(limit: number = 10): Promise<string[]> {
-  const res = await fetch(`${MEMPOOL_API}/mempool/txids`, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error('Failed to fetch mempool txs');
-  const txids: string[] = await res.json();
-  return txids.slice(0, limit);
-}
-
-/** mempool/recent returns simplified objects: { txid, fee, vsize, value } */
 export async function getMempoolRecent(): Promise<any[]> {
   const res = await fetch(`${MEMPOOL_API}/mempool/recent`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch recent mempool txs');
@@ -115,16 +107,12 @@ export async function getRecommendedFees(): Promise<RecommendedFees> {
 
 /**
  * Projected next blocks with fee ranges from mempool.space
- * (previously misnamed getFeeHistogram)
  */
 export async function getMempoolBlocks(): Promise<unknown[]> {
   const res = await fetch(`${MEMPOOL_API}/v1/fees/mempool-blocks`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch mempool blocks');
   return res.json();
 }
-
-/** @deprecated Use getMempoolBlocks() */
-export const getFeeHistogram = getMempoolBlocks;
 
 // ============ ADDRESS ============
 

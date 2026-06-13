@@ -236,45 +236,6 @@ export function checkFreeTierLimit(
   return { allowed: true, remaining: limit - entry.count, resetAt: entry.resetAt };
 }
 
-// ============ AGENT USER-AGENT DETECTION ============
-
-/** Known AI agent user-agent patterns */
-const AGENT_USER_AGENTS = [
-  'openai',
-  'claude',
-  'anthropic',
-  'gemini',
-  'cohere',
-  'llama',
-  'gpt',
-  'chatgpt',
-  'cursor',
-  'copilot',
-  'windsurf',
-  'aider',
-  'bolt',
-  'v0',
-  'btcfi-mcp',
-  'btcfi-sdk',
-];
-
-/**
- * Detect if a request is from an AI agent based on User-Agent header.
- */
-export function isAgentRequest(request: NextRequest): boolean {
-  const ua = request.headers.get('user-agent')?.toLowerCase() || '';
-  return AGENT_USER_AGENTS.some(agent => ua.includes(agent));
-}
-
-/**
- * Detect if a request is from an agent via MCP package identification.
- */
-export function isMCPRequest(request: NextRequest): boolean {
-  const ua = request.headers.get('user-agent')?.toLowerCase() || '';
-  const xClient = request.headers.get('X-Client')?.toLowerCase() || '';
-  return ua.includes('btcfi-mcp') || xClient.includes('btcfi-mcp') || xClient.includes('@aiindigo');
-}
-
 // ============ FREE TIER MIDDLEWARE HANDLER ============
 
 /**

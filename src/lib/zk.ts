@@ -235,40 +235,4 @@ export async function verifyProof(
   return { verified: true, proofType, checks };
 }
 
-// ============ UTILITY ============
 
-export async function buildAddressSet(addresses: string[]): Promise<{
-  root: string;
-  proofs: Map<string, string[]>;
-}> {
-  const leaves = await Promise.all(addresses.map(a => sha256(a)));
-  const layers: string[][] = [leaves];
-  let currentLayer = leaves;
-
-  while (currentLayer.length > 1) {
-    const nextLayer: string[] = [];
-    for (let i = 0; i < currentLayer.length; i += 2) {
-      const left = currentLayer[i];
-      const right = currentLayer[i + 1] || left;
-      nextLayer.push(await sha256(left + right));
-    }
-    layers.push(nextLayer);
-    currentLayer = nextLayer;
-  }
-
-  const root = currentLayer[0];
-  const proofs = new Map<string, string[]>();
-
-  for (let i = 0; i < addresses.length; i++) {
-    const proof: string[] = [];
-    let idx = i;
-    for (let layer = 0; layer < layers.length - 1; layer++) {
-      const siblingIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
-      proof.push(layers[layer][siblingIdx] || layers[layer][idx]);
-      idx = Math.floor(idx / 2);
-    }
-    proofs.set(addresses[i], proof);
-  }
-
-  return { root, proofs };
-}

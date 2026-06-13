@@ -75,25 +75,4 @@ export function generatePEACReceipt(
   return `${header}.${body}.${signature}`;
 }
 
-/**
- * Verify a PEAC receipt locally.
- */
-export function verifyPEACReceipt(receipt: string): { valid: boolean; payload?: PEACReceiptPayload; error?: string } {
-  if (!PEAC_SECRET) return { valid: false, error: 'signing_key_not_configured' };
-  try {
-    const parts = receipt.split('.');
-    if (parts.length !== 3) return { valid: false, error: 'invalid_format' };
 
-    const [header, body, signature] = parts;
-    const expectedSig = createHmac('sha256', PEAC_SECRET!)
-      .update(`${header}.${body}`)
-      .digest('base64url');
-
-    if (signature !== expectedSig) return { valid: false, error: 'invalid_signature' };
-
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString()) as PEACReceiptPayload;
-    return { valid: true, payload };
-  } catch {
-    return { valid: false, error: 'parse_error' };
-  }
-}

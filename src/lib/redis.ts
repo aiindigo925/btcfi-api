@@ -33,10 +33,4 @@ export async function safeSet(key: string, value: string, ttlSeconds?: number): 
   } catch {}
 }
 
-export async function safeIncr(key: string): Promise<number> {
-  try {
-    return await getRedis().incr(key);
-  } catch {
-    return 0;
-  }
-}
+

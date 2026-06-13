@@ -256,21 +256,6 @@ export async function checkPayment(request: NextRequest): Promise<NextResponse |
   return null; // Payment valid — proceed
 }
 
-// ============ LEGACY COMPAT ============
-
-/**
- * Legacy withPayment() — redirects to middleware-based payment check.
- * Kept for any routes that still call it directly during migration.
- * @deprecated Use middleware-level payment instead.
- */
-export async function withPayment(
-  request: NextRequest,
-  _resource: string,
-  _description?: string
-): Promise<NextResponse | null> {
-  return checkPayment(request);
-}
-
 // ============ STATUS ============
 
 export function getX402Status() {

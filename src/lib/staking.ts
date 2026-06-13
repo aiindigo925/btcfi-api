@@ -83,33 +83,6 @@ export function getTierForStake(stakedUsdc: number): StakingTier {
 }
 
 /**
- * Calculate drip credits based on stake and time
- * Vesting pattern: credits accrue linearly per day
- */
-export function calculateDripCredits(
-  stakedUsdc: number,
-  stakeDurationDays: number
-): number {
-  const tier = getTierForStake(stakedUsdc);
-  if (tier.name === 'Free') return 0;
-
-  const dailyRate = tier.name === 'Whale' ? 200 : 10;
-  return Math.floor(dailyRate * stakeDurationDays);
-}
-
-/**
- * Fomo3D-inspired bonus: last agent to stake in a 24h period gets bonus credits
- */
-export function calculateFomoBonus(
-  isLastStaker: boolean,
-  stakedUsdc: number
-): number {
-  if (!isLastStaker) return 0;
-  // Bonus: 10% of stake as credits
-  return Math.floor(stakedUsdc * 0.1);
-}
-
-/**
  * Get stake status for an address.
  * Reads from on-chain escrow contracts on Base and Solana.
  * Falls back to zero stake if contracts not yet deployed or read fails.
