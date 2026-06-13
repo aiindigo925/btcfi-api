@@ -1,0 +1,34 @@
+{
+  "startCommand": {
+    "type": "stdio",
+    "configSchema": {
+      "BTCFI_API_URL": {
+        "type": "string",
+        "default": "https://btcfi.aiindigo.com",
+        "description": "API base URL"
+      },
+      "EVM_PRIVATE_KEY": {
+        "type": "string",
+        "description": "EVM private key for Base USDC x402 payments",
+        "secret": true
+      },
+      "SVM_PRIVATE_KEY": {
+        "type": "string",
+        "description": "Solana private key for NLx402 payments",
+        "secret": true
+      },
+      "PAYMENT_NETWORK": {
+        "type": "string",
+        "enum": ["base", "solana"],
+        "default": "base",
+        "description": "Payment network"
+      }
+    },
+    "command": "npx",
+    "args": ["@aiindigo/btcfi-mcp"]
+  },
+  "homepage": "https://btcfi.aiindigo.com",
+  "description": "Bitcoin intelligence for AI agents — 27 tools with x402 micropayments. No API keys.",
+  "repository": "https://github.com/aiindigo925/btcfi-api",
+  "keywords": ["bitcoin", "btcfi", "x402", "micropayments", "zk-proofs", "ai-agents", "solv-protocol"]
+}

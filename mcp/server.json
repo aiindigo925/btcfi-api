@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.aiindigo925/btcfi",
-  "description": "Bitcoin data for AI agents. 27 tools with x402 micropayments. No API keys needed.",
+  "description": "Bitcoin intelligence for AI agents. 27 tools covering blockchain data, AI-powered analytics, security analysis, Solv Protocol BTCFi, ZK proofs, and real-time streams — powered by x402 micropayments (no API keys).",
   "version": "3.0.1",
   "title": "BTCFi API",
   "websiteUrl": "https://btcfi.aiindigo.com",
@@ -9,6 +9,24 @@
     "url": "https://github.com/aiindigo925/btcfi-api",
     "source": "github"
   },
+  "tags": [
+    "bitcoin",
+    "btcfi",
+    "x402",
+    "micropayments",
+    "zk-proofs",
+    "intelligence",
+    "security",
+    "ai-agents",
+    "solv-protocol",
+    "defi"
+  ],
+  "categories": [
+    "blockchain",
+    "finance",
+    "security",
+    "ai-agents"
+  ],
   "packages": [
     {
       "registryType": "npm",
@@ -19,12 +37,39 @@
       },
       "environmentVariables": [
         {
-          "name": "SVM_PRIVATE_KEY",
-          "description": "Solana private key for x402 payments (optional, Base payments work without)",
+          "name": "BTCFI_API_URL",
+          "description": "API base URL (default: https://btcfi.aiindigo.com)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "EVM_PRIVATE_KEY",
+          "description": "EVM private key for Base USDC x402 micropayments",
           "isRequired": false,
           "isSecret": true
+        },
+        {
+          "name": "SVM_PRIVATE_KEY",
+          "description": "Solana private key for NLx402 micropayments (zero facilitator fees)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "PAYMENT_NETWORK",
+          "description": "Payment network: 'base' (Coinbase) or 'solana' (NLx402, zero fees)",
+          "isRequired": false,
+          "isSecret": false
         }
       ]
+    },
+    {
+      "registryType": "remote",
+      "identifier": "btcfi-mcp-remote",
+      "version": "3.0.1",
+      "transport": {
+        "type": "sse",
+        "url": "https://btcfi.aiindigo.com/mcp"
+      }
     }
   ]
 }

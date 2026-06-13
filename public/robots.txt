@@ -1,0 +1,42 @@
+# BTCFi API — SEO Robots Policy
+# https://btcfi.aiindigo.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/admin/
+
+# Sitemaps
+Sitemap: https://btcfi.aiindigo.com/sitemap.xml
+
+# Crawl-delay (polite)
+Crawl-delay: 5
+
+# Googlebot specifics
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+
+# GPTBot — block AI training crawlers from API endpoints
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+# ChatGPT-User — block
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+
+# CCBot — block Common Crawl
+User-agent: CCBot
+Allow: /
+Disallow: /api/
+
+# Anthropic — block
+User-agent: anthropic-ai
+Allow: /
+Disallow: /api/
+
+# Bytespider — block TikTok/ByteDance
+User-agent: Bytespider
+Disallow: /
