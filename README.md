@@ -1,30 +1,43 @@
 # BTCFi API
 
-**Bitcoin Data & Intelligence for AI Agents**
+**Bitcoin Intelligence API for AI Agents**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
 
 Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com) · [GitHub](https://github.com/aiindigo925/btcfi-api)
 
 ---
 
-BTCFi API provides 33 endpoints across Bitcoin, Ethereum, and Solana — accessible via x402 micropayments. Pay $0.01–$0.05 per query in USDC — no API keys, no subscriptions.
+BTCFi API is an agent-native Bitcoin intelligence platform providing 33 endpoints across Bitcoin, Ethereum, and Solana. Powered by x402 micropayments — pay $0.01–$0.05 per query in USDC, no API keys or subscriptions required. AI agents discover endpoints at `/llms.txt` and integrate via MCP, SDK, or raw HTTP.
 
-## Free for Humans
+## Free Tier
 
-No payments, no signup, no API keys. Just open Telegram.
+100 calls/day per IP — no signup, no API keys, just make a request:
 
-- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 15 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`. Completely free.
-- **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min with buy/sell signals. Just join the channel.
-- **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch.
-- **Chrome Extension** — Price badge, whale alerts, address inspector (coming to Chrome Web Store).
+```bash
+curl https://btcfi.aiindigo.com/api/v1/fees
+```
+
+```json
+{
+  "fastest": 12,
+  "30min": 8,
+  "1hr": 5,
+  "economy": 3,
+  "fastestUSD": "$2.40",
+  "recommended": "8 sat/vB"
+}
+```
 
 ## Quick Start
 
-**For AI Agents (MCP):**
+**AI Agents (MCP):**
 ```bash
 npx @aiindigo/btcfi-mcp
 ```
 
-**For Developers (SDK):**
+**SDK:**
 ```bash
 npm install @aiindigo/btcfi
 ```
@@ -37,30 +50,151 @@ const fees = await btcfi.fees();
 const risk = await btcfi.intelligence.risk("bc1q...");
 ```
 
-## Endpoints
+**Raw HTTP:**
+```bash
+# Free endpoint — no auth needed
+curl https://btcfi.aiindigo.com/api/v1/mempool
 
-| Group | Count | Price | Examples |
-|-------|-------|-------|---------|
-| Core | 10 | $0.01–$0.05 | fees, mempool, address, UTXOs, tx history, transactions, blocks |
-| Intelligence | 5 | $0.02 | fee prediction, whale alerts, risk scoring, network health, UTXO consolidation |
-| Security | 1 | $0.02 | YARA-pattern threat analysis |
-| Solv Protocol | 4 | $0.02 | SolvBTC reserves, yield, liquidity, risk |
-| ZK Proofs | 4 | $0.01–$0.03 | balance range, UTXO age, set membership, verification |
-| Streams | 2 | $0.01 | real-time blocks, whale transactions (SSE) |
-| System | 2 | Free | health, staking status |
-| Ethereum | 3 | $0.01 | ETH gas, address balance, transaction details |
-| Solana | 2 | $0.01 | SOL priority fees, address balance |
+# Paid endpoint — requires x402 micropayment
+curl -X GET https://btcfi.aiindigo.com/api/v1/intelligence/whales \
+  -H "X-Payment: <x402-payment-proof>"
+```
 
-Full specification: [OpenAPI 3.1](https://btcfi.aiindigo.com/openapi.json)
+**OpenAPI Spec:**
+```
+https://btcfi.aiindigo.com/openapi.json
+```
 
-## Payment
+## API Reference
 
-Dual-network x402 micropayments in USDC:
+### Core Bitcoin Endpoints
 
-- **Base** — Coinbase facilitator (fee-free)
-- **Solana** — NLx402 by PCEF (nonprofit)
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/fees` | Fee estimates (fastest, 30min, 1hr, economy) with USD values | $0.01 |
+| `GET /api/v1/mempool` | Mempool summary, tx count, size, fee histogram | $0.01 |
+| `GET /api/v1/address/{addr}` | Address balance, tx count, funded/spent stats | $0.01 |
+| `GET /api/v1/address/{addr}/utxos` | Unspent transaction outputs | $0.01 |
+| `GET /api/v1/address/{addr}/txs` | Transaction history | $0.01 |
+| `GET /api/v1/tx/{txid}` | Full transaction details | $0.01 |
+| `GET /api/v1/tx/{txid}/status` | Confirmation status | $0.01 |
+| `POST /api/v1/tx/broadcast` | Broadcast signed transaction | $0.05 |
+| `GET /api/v1/block/latest` | Latest blocks with details | $0.01 |
+| `GET /api/v1/block/{id}` | Block by height or hash | $0.01 |
 
-No API keys. No sign-up. Just pay and query.
+### Intelligence Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/intelligence/fees` | AI fee prediction (1h, 6h, 24h windows) | $0.02 |
+| `GET /api/v1/intelligence/whales` | Large transaction detection | $0.02 |
+| `GET /api/v1/intelligence/risk/{addr}` | Address risk scoring | $0.02 |
+| `GET /api/v1/intelligence/network` | Hashrate, difficulty, congestion | $0.02 |
+| `GET /api/v1/intelligence/consolidate/{addr}` | UTXO consolidation advice | $0.02 |
+| `GET /api/v1/intelligence/mvrv` | MVRV ratio | $0.02 |
+| `GET /api/v1/intelligence/sopr` | SOPR (Spent Output Profit Ratio) | $0.02 |
+| `GET /api/v1/intelligence/nupl` | NUPL (Net Unrealized Profit/Loss) | $0.02 |
+| `GET /api/v1/intelligence/hodl-waves` | HODL wave distribution | $0.02 |
+
+### Security Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/security/threat/{addr}` | YARA-pattern threat analysis (8 patterns) | $0.02 |
+
+### ZK Proof Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `POST /api/v1/zk/balance-proof` | Prove balance ≥ threshold | $0.03 |
+| `POST /api/v1/zk/age-proof` | Prove UTXO age ≥ N blocks | $0.03 |
+| `POST /api/v1/zk/membership` | Prove set membership | $0.03 |
+| `POST /api/v1/zk/verify` | Verify any ZK proof | $0.01 |
+
+### Solv Protocol Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/solv/reserves` | SolvBTC supply, backing ratio, TVL | $0.02 |
+| `GET /api/v1/solv/yield` | xSolvBTC APY, yield strategies | $0.02 |
+| `GET /api/v1/solv/liquidity` | Cross-chain SolvBTC distribution | $0.02 |
+| `GET /api/v1/solv/risk` | Multi-factor risk assessment | $0.02 |
+
+### Cross-Chain Endpoints
+
+**Ethereum ($0.01):**
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/eth/gas` | ETH gas prices |
+| `GET /api/v1/eth/address/{addr}` | ETH address balance |
+| `GET /api/v1/eth/tx/{hash}` | ETH transaction details |
+
+**Solana ($0.01):**
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/sol/fees` | SOL priority fees |
+| `GET /api/v1/sol/address/{addr}` | SOL address balance |
+
+### Real-Time Streams
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/stream` | SSE: new blocks, fee changes, mempool surges | $0.01 |
+| `GET /api/v1/stream/whales` | SSE: whale transaction alerts (`?min=100` BTC) | $0.01 |
+
+### Agent Integration
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/mcp` | MCP server info and tools | Free |
+| `GET /llms.txt` | AI agent discovery file | Free |
+| `GET /api/v1/agent-skills` | Agent skill registry | Free |
+
+### System Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/health` | System health check | Free |
+| `GET /api/v1/staking/status` | Staking tier and rate limit status | Free |
+
+## Pricing
+
+| Category | Price (USDC) |
+|----------|-------------|
+| Core Bitcoin (fees, mempool, address, tx, block) | $0.01 |
+| Intelligence (whales, risk, MVRV, SOPR, NUPL, HODL waves) | $0.02 |
+| Security (threat analysis) | $0.02 |
+| Solv Protocol (reserves, yield, liquidity, risk) | $0.02 |
+| ZK Proofs (balance, age, membership) | $0.03 |
+| Transaction broadcast | $0.05 |
+| Ethereum / Solana | $0.01 |
+| Streams (SSE) | $0.01 |
+| System (health, status) | Free |
+| Agent Discovery (/llms.txt, /api/mcp) | Free |
+
+**Free Tier:** 100 calls/day per IP, no signup required.
+
+## Authentication
+
+BTCFi API uses **x402 micropayments** — no API keys, no OAuth, no subscriptions.
+
+1. **Free endpoints** — No authentication. Just make a request.
+2. **Paid endpoints** — Include an `X-Payment` header with a USDC micropayment proof.
+3. **Payment networks:**
+   - **Base** (EVM L2) — Coinbase facilitator, zero fees, ERC-3009
+   - **Solana** — NLx402 by PCEF (nonprofit), zero fees
+
+**Request signing** (optional, for higher rate limits):
+- Wallet-based signing with Ed25519 (Solana) or secp256k1 (EVM)
+- Headers: `X-Signature`, `X-Nonce`, `X-Signer`, `X-Timestamp`
+
+## Free for Humans
+
+No payments, no signup. Just open Telegram:
+
+- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 15 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`
+- **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min
+- **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch
 
 ## Security
 
@@ -70,8 +204,27 @@ No API keys. No sign-up. Just pay and query.
 - 8 YARA-style threat detection patterns
 - Nonce replay protection
 - PEAC Protocol cryptographic receipts
+- Tiered rate limiting (free: 100/min, signed: 500/min, paid: unlimited)
 
-Report vulnerabilities: security@aiindigo.com
+Report vulnerabilities: **security@aiindigo.com**
+
+## Self-Hosted
+
+Run the API locally for development or private deployment:
+
+```bash
+git clone https://github.com/aiindigo925/btcfi-api.git
+cd btcfi-api
+npm install
+cp .env.example .env    # Configure environment variables
+npm run dev              # Start on port 3001
+```
+
+Required environment variables:
+- `UPSTASH_REDIS_REST_URL` — Redis connection for caching
+- `UPSTASH_REDIS_REST_TOKEN` — Redis auth token
+- `X402_NETWORK` — Payment network (base or solana)
+- `X402_FACILITATOR_URL` — x402 facilitator endpoint
 
 ## Documentation
 
@@ -90,11 +243,15 @@ Report vulnerabilities: security@aiindigo.com
 | [`@aiindigo/btcfi-mcp`](https://www.npmjs.com/package/@aiindigo/btcfi-mcp) | MCP Server — 27 tools for Claude, ChatGPT, Gemini |
 | [MCP Registry](https://registry.modelcontextprotocol.io) | `io.github.aiindigo925/btcfi` |
 | [Glama](https://glama.ai/mcp/servers) | Indexed — searchable MCP directory |
-| [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) | Telegram bot — 9 commands + inline mode |
+| [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) | Telegram bot — 15 commands + inline mode |
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+[MIT](LICENSE) — Copyright © 2026 [AI Indigo](https://aiindigo.com)
 
 ---
 
