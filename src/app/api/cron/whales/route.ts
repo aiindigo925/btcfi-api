@@ -15,9 +15,12 @@ const DEFAULT_MIN_BTC = 10; // Minimum BTC to alert
 const DEDUP_TTL = 86400; // 24h TTL for seen txids
 
 export async function GET(request: NextRequest) {
-  // Verify Vercel Cron authorization
+  // Verify Vercel Cron authorization — fail closed if CRON_SECRET not set
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'Service unavailable: CRON_SECRET not configured' }, { status: 503 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -36,8 +36,12 @@ function esc(s: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  // Fail closed if CRON_SECRET not set
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'Service unavailable: CRON_SECRET not configured' }, { status: 503 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

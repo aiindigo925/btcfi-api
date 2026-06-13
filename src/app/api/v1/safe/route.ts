@@ -11,13 +11,9 @@ import { isValidBitcoinAddress } from '@/lib/validation';
 const INTERNAL_KEY = process.env.INTERNAL_API_KEY || '';
 
 export async function GET(request: NextRequest) {
-  // Verify internal caller (from /safe page server component or client fetch)
+  // Verify internal caller — X-Internal-Key only (Referer is spoofable, removed)
   const internalKey = request.headers.get('X-Internal-Key');
-  const referer = request.headers.get('referer') || '';
-  const isSafePageOrigin = referer.includes('/safe');
-
-  // Allow if internal key matches OR request comes from /safe page
-  if (INTERNAL_KEY && internalKey !== INTERNAL_KEY && !isSafePageOrigin) {
+  if (INTERNAL_KEY && internalKey !== INTERNAL_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

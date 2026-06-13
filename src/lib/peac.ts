@@ -10,9 +10,9 @@
 
 import { createHmac } from 'crypto';
 
-const PEAC_SECRET = process.env.PEAC_SIGNING_KEY || 'btcfi-peac-default-key';
-if (!process.env.PEAC_SIGNING_KEY) {
-  console.warn('[PEAC] WARNING: Using default signing key. Set PEAC_SIGNING_KEY in production.');
+const PEAC_SECRET = process.env.PEAC_SIGNING_KEY;
+if (!PEAC_SECRET) {
+  console.error('[PEAC] FATAL: PEAC_SIGNING_KEY not set. Receipt generation DISABLED.');
 }
 const PEAC_VERSION = '0.9.15';
 
@@ -52,6 +52,9 @@ export function generatePEACReceipt(
   network: string,
   responseBody: string
 ): string {
+  if (!PEAC_SECRET) {
+    throw new Error('[PEAC] Cannot generate receipt: PEAC_SIGNING_KEY not configured');
+  }
   const payload: PEACReceiptPayload = {
     v: PEAC_VERSION,
     ts: new Date().toISOString(),
@@ -65,7 +68,7 @@ export function generatePEACReceipt(
 
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'PEAC' }));
   const body = base64url(JSON.stringify(payload));
-  const signature = createHmac('sha256', PEAC_SECRET)
+  const signature = createHmac('sha256', PEAC_SECRET!)
     .update(`${header}.${body}`)
     .digest('base64url');
 
@@ -76,12 +79,13 @@ export function generatePEACReceipt(
  * Verify a PEAC receipt locally.
  */
 export function verifyPEACReceipt(receipt: string): { valid: boolean; payload?: PEACReceiptPayload; error?: string } {
+  if (!PEAC_SECRET) return { valid: false, error: 'signing_key_not_configured' };
   try {
     const parts = receipt.split('.');
     if (parts.length !== 3) return { valid: false, error: 'invalid_format' };
 
     const [header, body, signature] = parts;
-    const expectedSig = createHmac('sha256', PEAC_SECRET)
+    const expectedSig = createHmac('sha256', PEAC_SECRET!)
       .update(`${header}.${body}`)
       .digest('base64url');
 
