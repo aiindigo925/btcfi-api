@@ -5,7 +5,7 @@
  * 1. Adds CORS headers to all API responses
  * 2. Adds security headers
  * 3. Checks x402 payment for paid endpoints (when X402_ENABLED=true)
- * 4. Applies rate limiting by tier (free/signed/paid/staked)
+ * 4. Applies rate limiting by tier (free/paid/staked)
  * 5. Records payments for revenue tracking
  * 6. Handles encrypted response setup
  */
@@ -16,46 +16,58 @@ import { getRateLimitTier, RATE_LIMITS, type SignerTier } from '@/lib/request-si
 import { recordPayment } from '@/lib/revenue';
 import { generatePEACReceipt } from '@/lib/peac';
 
-// ============ RATE LIMITING (IN-MEMORY) ============
+// ============ RATE LIMITING (UPSTASH REDIS) ============
 
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+import { getRedis } from '@/lib/redis';
+
 const WINDOW_MS = 60_000; // 1 minute
 
-function checkRateLimit(ip: string, tier: SignerTier): { allowed: boolean; remaining: number; resetAt: number } {
+async function checkRateLimit(ip: string, tier: SignerTier): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
   const limit = RATE_LIMITS[tier];
   if (limit === Infinity) return { allowed: true, remaining: Infinity, resetAt: 0 };
 
-  const now = Date.now();
-  const key = `${tier}:${ip}`;
-  const entry = rateLimitStore.get(key);
+  try {
+    const redis = getRedis();
+    const key = `ratelimit:${tier}:${ip}`;
+    const now = Date.now();
+    const windowStart = now - WINDOW_MS;
 
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return { allowed: true, remaining: limit - 1, resetAt: now + WINDOW_MS };
+    // Sliding window: remove expired entries, count current
+    await redis.zremrangebyscore(key, 0, windowStart);
+    const count = await redis.zcard(key);
+
+    if (count >= limit) {
+      // Get oldest entry to calculate reset time
+      const oldest = await redis.zrange(key, 0, 0, { withScores: true }) as any[];
+      const resetAt = oldest.length > 0 ? Number(oldest[0].score) + WINDOW_MS : now + WINDOW_MS;
+      return { allowed: false, remaining: 0, resetAt };
+    }
+
+    // Add current request
+    await redis.zadd(key, { score: now, member: `${now}:${Math.random().toString(36).slice(2)}` });
+    await redis.expire(key, Math.ceil(WINDOW_MS / 1000));
+
+    return { allowed: true, remaining: limit - count - 1, resetAt: now + WINDOW_MS };
+  } catch {
+    // Redis failure — fail open (allow request)
+    return { allowed: true, remaining: limit, resetAt: 0 };
   }
-
-  entry.count++;
-  const allowed = entry.count <= limit;
-  return { allowed, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
 }
-
-// Periodic cleanup (every 5 min, clear expired entries)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore) {
-    if (now >= entry.resetAt + WINDOW_MS) rateLimitStore.delete(key);
-  }
-}, 300_000);
 
 // ============ CORS & SECURITY HEADERS ============
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Payment, X-Payment-Network, X-Signature, X-Nonce, X-Signer, X-Timestamp, X-Encrypt-Response, X-Staker, Authorization',
-  'Access-Control-Expose-Headers': 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Payment-Required, X-Payment-Amount, X-Payment-Currency, X-Payment-Networks, X-PEAC-Receipt',
-  'Access-Control-Max-Age': '86400',
-};
+const ALLOWED_ORIGINS = ['https://btcfi.aiindigo.com', 'http://localhost:3000'];
+function getCorsHeaders(request: NextRequest): Record<string, string> {
+  const origin = request.headers.get('origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Payment, X-Payment-Network, X-Signature, X-Nonce, X-Signer, X-Timestamp, X-Encrypt-Response, X-Staker, Authorization, X-Internal-Key',
+    'Access-Control-Expose-Headers': 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Payment-Required, X-Payment-Amount, X-Payment-Currency, X-Payment-Networks, X-PEAC-Receipt',
+    'Access-Control-Max-Age': '86400',
+  };
+}
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -121,7 +133,7 @@ export async function middleware(request: NextRequest) {
 
   // CORS preflight
   if (request.method === 'OPTIONS') {
-    return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+    return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
   }
 
   // Only apply payment/rate-limit logic to API routes
@@ -137,7 +149,7 @@ export async function middleware(request: NextRequest) {
   const network = detectNetwork(request);
 
   // Rate limit check
-  const rateResult = checkRateLimit(ip, tier);
+  const rateResult = await checkRateLimit(ip, tier);
   if (!rateResult.allowed) {
     return NextResponse.json(
       {
@@ -153,7 +165,7 @@ export async function middleware(request: NextRequest) {
       {
         status: 429,
         headers: {
-          ...CORS_HEADERS,
+          ...getCorsHeaders(request),
           ...SECURITY_HEADERS,
           'X-RateLimit-Limit': String(RATE_LIMITS[tier]),
           'X-RateLimit-Remaining': '0',
@@ -168,7 +180,7 @@ export async function middleware(request: NextRequest) {
   const internalKey = request.headers.get('X-Internal-Key');
   if (INTERNAL_API_KEY && internalKey === INTERNAL_API_KEY) {
     const response = NextResponse.next();
-    Object.entries(CORS_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+    Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
     Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
     return response;
   }
@@ -178,7 +190,7 @@ export async function middleware(request: NextRequest) {
     const paymentResponse = await checkPayment(request);
     if (paymentResponse) {
       // Add CORS headers to 402 response
-      Object.entries(CORS_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
+      Object.entries(getCorsHeaders(request)).forEach(([k, v]) => paymentResponse.headers.set(k, v));
       Object.entries(SECURITY_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
       return paymentResponse;
     }
@@ -193,7 +205,7 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // Add standard headers
-  Object.entries(CORS_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+  Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
   Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
 
   // Rate limit headers

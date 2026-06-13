@@ -24,10 +24,9 @@ const usedNonces = new Map<string, number>(); // nonce → timestamp
 const NONCE_TTL = 300_000; // 5 minutes
 const MAX_CLOCK_DRIFT = 60; // seconds
 
-// Rate limit tiers based on signing
+// Rate limit tiers
 export const RATE_LIMITS = {
   free: 100,      // per minute
-  signed: 500,    // per minute — wallet-verified
   paid: Infinity, // x402 paid
   staked: Infinity, // staked agents
 } as const;
@@ -251,30 +250,19 @@ export async function verifyRequestSignature(
     valid: true,
     signer,
     network,
-    tier: 'signed',
+    tier: 'free',
   };
 }
 
 /**
- * Get rate limit for a request based on headers.
- * Note: "signed" tier requires all 4 signing headers present.
- * Full crypto verification happens async and is too expensive for every rate-limit check.
- * The middleware should call verifyRequestSignature() for high-value endpoints.
+ * Get rate limit tier for a request based on headers.
+ * Returns 'paid' if X-Payment header is present, otherwise 'free'.
+ * The 'signed' tier has been removed — unsigned requests without
+ * X-Payment are always free tier.
  */
 export function getRateLimitTier(headers: Headers): SignerTier {
   // Paid requests (x402) → unlimited
   if (headers.get('X-Payment') || headers.get('x-payment')) return 'paid';
-  // Signed requests → higher limit (require all 4 headers to prevent trivial spoofing)
-  const sig = headers.get('X-Signature') || headers.get('x-signature');
-  const nonce = headers.get('X-Nonce') || headers.get('x-nonce');
-  const signer = headers.get('X-Signer') || headers.get('x-signer');
-  const ts = headers.get('X-Timestamp') || headers.get('x-timestamp');
-  if (sig && nonce && signer && ts) {
-    // Basic structural checks (full crypto verification is async)
-    if (sig.length >= 64 && nonce.length >= 8 && signer.length >= 32) {
-      return 'signed';
-    }
-  }
   // Default → free
   return 'free';
 }

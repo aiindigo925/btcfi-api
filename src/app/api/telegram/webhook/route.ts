@@ -11,9 +11,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+const SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
+
 export async function POST(request: NextRequest) {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     return NextResponse.json({ error: 'Bot not configured' }, { status: 503 });
+  }
+
+  // Validate Telegram secret token if configured
+  if (SECRET_TOKEN) {
+    const token = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+    if (token !== SECRET_TOKEN) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
   try {

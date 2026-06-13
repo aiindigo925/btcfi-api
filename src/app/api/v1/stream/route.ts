@@ -65,9 +65,12 @@ export async function GET(request: NextRequest) {
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
       // CORS + security (middleware can't inject on custom Response)
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': 'https://btcfi.aiindigo.com',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     },
   });
 }
