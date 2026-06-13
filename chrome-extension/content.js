@@ -65,9 +65,10 @@ function scanPage() {
   if (matches.size === 0) return;
 
   // Add hover listeners to elements containing BTC addresses
+  // Target only common text-containing elements (not document.querySelectorAll('*'))
+  const candidates = document.querySelectorAll('p, span, div, a, td, li, code, pre, h1, h2, h3, h4, h5, h6');
   matches.forEach(addr => {
-    const elements = document.querySelectorAll('*');
-    for (const el of elements) {
+    for (const el of candidates) {
       if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 && el.textContent?.includes(addr)) {
         el.style.cursor = 'help';
         el.style.borderBottom = '1px dashed #f7931a33';

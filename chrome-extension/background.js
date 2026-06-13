@@ -3,13 +3,19 @@
  * Updates BTC price badge, whale alerts, and context menu.
  */
 
-const API = 'https://btcfi.aiindigo.com';
+const DEFAULT_API = 'https://btcfi.aiindigo.com';
+
+async function getApiUrl() {
+  const { apiUrl } = await chrome.storage.sync.get({ apiUrl: DEFAULT_API });
+  return apiUrl || DEFAULT_API;
+}
 
 // ============ BADGE (PRICE) ============
 
 async function updateBadge() {
   try {
-    const res = await fetch(`${API}/api/v1/fees`);
+    const api = await getApiUrl();
+    const res = await fetch(`${api}/api/v1/fees`);
     const data = await res.json();
     const price = data?.price?.btcUsd || 0;
     const text = price >= 100000
@@ -33,7 +39,8 @@ async function checkWhales() {
     const settings = await chrome.storage.sync.get({ whaleAlerts: true, whaleThreshold: 50 });
     if (!settings.whaleAlerts) return;
 
-    const res = await fetch(`${API}/api/v1/intelligence/whales`);
+    const api = await getApiUrl();
+    const res = await fetch(`${api}/api/v1/intelligence/whales`);
     const data = await res.json();
     const whales = data?.data?.transactions || [];
 
@@ -70,11 +77,12 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     const text = info.selectionText.trim();
     // BTC address check
     if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(text)) {
-      chrome.tabs.create({ url: `${API}/safe?addr=${encodeURIComponent(text)}` });
+      const api = await getApiUrl();
+      chrome.tabs.create({ url: `${api}/safe?addr=${encodeURIComponent(text)}` });
     } else if (/^[a-fA-F0-9]{64}$/.test(text)) {
-      chrome.tabs.create({ url: `${API}/dashboard/address?txid=${encodeURIComponent(text)}` });
+      chrome.tabs.create({ url: `${(await getApiUrl())}/dashboard/address?txid=${encodeURIComponent(text)}` });
     } else {
-      chrome.tabs.create({ url: `${API}/dashboard/address` });
+      chrome.tabs.create({ url: `${(await getApiUrl())}/dashboard/address` });
     }
   }
 });

@@ -43,21 +43,33 @@
     </div>
   </div>
 
+  <div class="setting">
+    <div class="row">
+      <div>
+        <div class="label">API URL</div>
+        <div style="font-size: 13px">Backend API endpoint</div>
+      </div>
+      <input type="text" id="apiUrl" value="https://btcfi.aiindigo.com" style="background:#0a0a0a;border:1px solid #222;color:#fff;padding:6px 10px;border-radius:4px;width:240px;font-family:inherit;font-size:12px">
+    </div>
+  </div>
+
   <button id="save">Save Settings</button>
   <div class="saved" id="saved">Settings saved!</div>
 
   <script>
     const $ = id => document.getElementById(id);
 
-    chrome.storage.sync.get({ whaleAlerts: true, whaleThreshold: 50 }, (s) => {
+    chrome.storage.sync.get({ whaleAlerts: true, whaleThreshold: 50, apiUrl: 'https://btcfi.aiindigo.com' }, (s) => {
       $('whaleAlerts').checked = s.whaleAlerts;
       $('whaleThreshold').value = s.whaleThreshold;
+      $('apiUrl').value = s.apiUrl;
     });
 
     $('save').addEventListener('click', () => {
       chrome.storage.sync.set({
         whaleAlerts: $('whaleAlerts').checked,
         whaleThreshold: parseInt($('whaleThreshold').value) || 50,
+        apiUrl: $('apiUrl').value.trim() || 'https://btcfi.aiindigo.com',
       }, () => {
         $('saved').style.display = 'block';
         setTimeout(() => $('saved').style.display = 'none', 2000);

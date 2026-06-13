@@ -1,0 +1,115 @@
+# BTCFi API — Agent Discovery File
+# https://btcfi.aiindigo.com
+# Bitcoin data, BTCFi intelligence, ZK proofs & real-time streams for AI agents
+
+## Overview
+BTCFi API is an agent-native Bitcoin intelligence platform providing 33 endpoints
+across Bitcoin, Ethereum, and Solana blockchains. All paid endpoints use x402
+micropayments in USDC (no API keys, no subscriptions). Several endpoints are free.
+
+Base URL: https://btcfi.aiindigo.com
+OpenAPI: https://btcfi.aiindigo.com/openapi.json
+MCP Server: npx @aiindigo/btcfi-mcp (27 tools, stdio transport)
+SDK: npm install @aiindigo/btcfi (28 methods)
+
+## Authentication
+- x402 micropayment: X-Payment header with USDC payment proof
+- Wallet signing: X-Signature + X-Nonce + X-Signer + X-Timestamp headers
+- Free endpoints: No authentication required
+- Internal services: X-Internal-Key header (pre-shared)
+
+## Payment Networks
+- Base (EVM L2): Coinbase facilitator, zero fees, ERC-3009
+- Solana: NLx402 (PCEF nonprofit), zero fees
+
+## Pricing (USDC per query)
+- $0.01: Core queries (fees, mempool, address, UTXOs, tx, blocks, streams)
+- $0.02: Intelligence (whale alerts, risk scoring, fee prediction, network health)
+- $0.02: Security (YARA-pattern threat analysis)
+- $0.02: Solv Protocol (reserves, yield, liquidity, risk)
+- $0.03: ZK proof generation (balance, age, membership)
+- $0.05: Transaction broadcast (write operation)
+- Free: Health check, staking status, API index, dashboard
+
+## Free Endpoints (No Payment Required)
+- GET /api/health — System health check
+- GET /api/v1 — API index with all endpoint listings
+- GET /api/v1/staking/status — Staking tier and rate limit status
+- GET /.well-known/x402-manifest.json — Payment manifest
+- GET /.well-known/peac.txt — Usage terms and receipts
+
+## Core Bitcoin Endpoints ($0.01)
+- GET /api/v1/fees — Fee estimates (fastest, 30min, 1hr, economy) with USD values
+- GET /api/v1/mempool — Mempool summary, tx count, size, fee histogram
+- GET /api/v1/address/{addr} — Address balance, tx count, funded/spent stats
+- GET /api/v1/address/{addr}/utxos — Unspent transaction outputs
+- GET /api/v1/address/{addr}/txs — Transaction history
+- GET /api/v1/tx/{txid} — Full transaction details
+- GET /api/v1/tx/{txid}/status — Confirmation status
+- POST /api/v1/tx/broadcast — Broadcast signed transaction ($0.05)
+- GET /api/v1/block/latest — Latest blocks with details
+- GET /api/v1/block/{id} — Block by height or hash
+
+## Intelligence Endpoints ($0.02)
+- GET /api/v1/intelligence/fees — AI fee prediction (1h, 6h, 24h windows)
+- GET /api/v1/intelligence/whales — Large transaction detection
+- GET /api/v1/intelligence/risk/{addr} — Address risk scoring
+- GET /api/v1/intelligence/network — Hashrate, difficulty, congestion
+- GET /api/v1/intelligence/consolidate/{addr} — UTXO consolidation advice
+- GET /api/v1/intelligence/mvrv — MVRV ratio
+- GET /api/v1/intelligence/sopr — SOPR (Spent Output Profit Ratio)
+- GET /api/v1/intelligence/nupl — NUPL (Net Unrealized Profit/Loss)
+- GET /api/v1/intelligence/hodl-waves — HODL wave distribution
+
+## Security Endpoints ($0.02)
+- GET /api/v1/security/threat/{addr} — YARA-pattern threat analysis (8 patterns)
+
+## Solv Protocol / BTCFi Endpoints ($0.02)
+- GET /api/v1/solv/reserves — SolvBTC supply, backing ratio, TVL
+- GET /api/v1/solv/yield — xSolvBTC APY, yield strategies
+- GET /api/v1/solv/liquidity — Cross-chain SolvBTC distribution
+- GET /api/v1/solv/risk — Multi-factor risk assessment
+
+## ZK Proof Endpoints
+- POST /api/v1/zk/balance-proof — Prove balance >= threshold ($0.03)
+- POST /api/v1/zk/age-proof — Prove UTXO age >= N blocks ($0.03)
+- POST /api/v1/zk/membership — Prove set membership ($0.03)
+- POST /api/v1/zk/verify — Verify any ZK proof ($0.01)
+
+## Real-Time Streams ($0.01)
+- GET /api/v1/stream — SSE: new blocks, fee changes, mempool surges
+- GET /api/v1/stream/whales — SSE: whale transaction alerts (?min=100 BTC)
+
+## Cross-Chain Endpoints
+### Ethereum ($0.01)
+- GET /api/v1/eth/gas — ETH gas prices
+- GET /api/v1/eth/address/{addr} — ETH address balance
+- GET /api/v1/eth/tx/{hash} — ETH transaction details
+
+### Solana ($0.01)
+- GET /api/v1/sol/fees — SOL priority fees
+- GET /api/v1/sol/address/{addr} — SOL address balance
+
+## Agent Integration
+- MCP: Use npx @aiindigo/btcfi-mcp for Claude, ChatGPT, Gemini integration
+- SDK: Use BTCFi class from @aiindigo/btcfi for programmatic access
+- Telegram: @BTC_Fi_Bot for free human access (15 commands + inline mode)
+- Chrome Extension: Price badge, whale alerts, address inspector
+
+## Security Features
+- Wallet-based request signing (Ed25519 + secp256k1)
+- Encrypted responses (Curve25519 + XSalsa20-Poly1305)
+- Zero-knowledge proofs (Groth16)
+- 8 YARA-style threat detection patterns
+- Nonce replay protection
+- PEAC Protocol cryptographic receipts
+- Tiered rate limiting (free: 100/min, signed: 500/min, paid: unlimited)
+
+## Contact
+- Website: https://btcfi.aiindigo.com
+- Security: security@aiindigo.com
+- Operator: AI Indigo (https://aiindigo.com)
+- GitHub: https://github.com/aiindigo925/btcfi-api
+
+## License
+MIT

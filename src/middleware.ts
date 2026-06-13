@@ -15,6 +15,7 @@ import { checkPayment, getPriceForPath, detectNetwork } from '@/lib/x402';
 import { getRateLimitTier, RATE_LIMITS, type SignerTier } from '@/lib/request-signing';
 import { recordPayment } from '@/lib/revenue';
 import { generatePEACReceipt } from '@/lib/peac';
+import { handleFreeTier, classifyPath, getFreeTierStatus } from '@/lib/free-tier-middleware';
 
 // ============ RATE LIMITING (UPSTASH REDIS) ============
 
@@ -95,6 +96,7 @@ const FREE_PATHS = [
   '/api/telegram',
   '/api/v1/safe',
   '/api/mcp',
+  '/api/v1/agent-skills',
 ];
 
 /** Paths that don't go through middleware at all */
@@ -103,6 +105,7 @@ const SKIP_PATHS = [
   '/favicon.ico',
   '/openapi.json',
   '/.well-known',
+  '/llms.txt',
 ];
 
 function isApiPath(pathname: string): boolean {
@@ -186,16 +189,28 @@ export async function middleware(request: NextRequest) {
 
   // x402 payment check for paid endpoints
   if (!isFreePath(pathname)) {
-    const paymentResponse = await checkPayment(request);
-    if (paymentResponse) {
-      // Add CORS headers to 402 response
-      Object.entries(getCorsHeaders(request)).forEach(([k, v]) => paymentResponse.headers.set(k, v));
-      Object.entries(SECURITY_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
-      return paymentResponse;
-    }
+    // Check if there's an X-Payment header first
+    const hasPayment = request.headers.get('X-Payment') || request.headers.get('x-payment');
 
-    // Payment valid — record it
-    if (request.headers.get('X-Payment') || request.headers.get('x-payment')) {
+    if (!hasPayment) {
+      // No payment — try free tier access
+      const freeTierResponse = await handleFreeTier(request);
+      if (freeTierResponse) {
+        // Free tier blocked (402 or rate limit) — return with CORS
+        Object.entries(getCorsHeaders(request)).forEach(([k, v]) => freeTierResponse.headers.set(k, v));
+        Object.entries(SECURITY_HEADERS).forEach(([k, v]) => freeTierResponse.headers.set(k, v));
+        return freeTierResponse;
+      }
+      // Free tier allowed — proceed without payment
+    } else {
+      // Has payment — verify it
+      const paymentResponse = await checkPayment(request);
+      if (paymentResponse) {
+        Object.entries(getCorsHeaders(request)).forEach(([k, v]) => paymentResponse.headers.set(k, v));
+        Object.entries(SECURITY_HEADERS).forEach(([k, v]) => paymentResponse.headers.set(k, v));
+        return paymentResponse;
+      }
+      // Payment valid — record it
       recordPayment(network, pathname);
     }
   }

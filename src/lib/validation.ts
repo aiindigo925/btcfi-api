@@ -15,17 +15,6 @@ export function isValidBitcoinAddress(address: string): boolean {
   return BECH32_REGEX.test(address) || P2PKH_REGEX.test(address) || P2SH_REGEX.test(address);
 }
 
-export function getAddressType(address: string): string | null {
-  if (!address) return null;
-  if (address.startsWith('bc1p') && address.length === 62) return 'taproot (P2TR)';
-  if (address.startsWith('bc1q') && address.length === 42) return 'segwit (P2WPKH)';
-  if (address.startsWith('bc1q') && address.length === 62) return 'segwit (P2WSH)';
-  if (address.startsWith('bc1')) return 'bech32';
-  if (address.startsWith('3')) return 'P2SH';
-  if (address.startsWith('1')) return 'P2PKH (legacy)';
-  return null;
-}
-
 // ============ TRANSACTION ID ============
 
 const TXID_REGEX = /^[a-fA-F0-9]{64}$/;
@@ -89,18 +78,6 @@ export function sanitizeFloat(
   return Math.min(max, Math.max(min, n));
 }
 
-// ============ STRING SANITIZATION ============
-
-export function sanitizeString(input: string, maxLength: number = 256): string {
-  if (!input || typeof input !== 'string') return '';
-  // Strip control characters, null bytes, and trim
-  return input
-    .replace(/[\x00-\x1f\x7f]/g, '')
-    .replace(/[<>"'`;(){}]/g, '') // Strip common injection chars
-    .trim()
-    .slice(0, maxLength);
-}
-
 // ============ WALLET ADDRESSES (EVM + SOLANA) ============
 
 const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
@@ -131,7 +108,6 @@ export const ERRORS = {
   INVALID_TXID: validationError('Invalid transaction ID — must be 64 hex characters', 'INVALID_TXID'),
   INVALID_BLOCK_ID: validationError('Invalid block identifier — must be height (number) or hash (64 hex chars)', 'INVALID_BLOCK_ID'),
   INVALID_RAW_TX: validationError('Invalid raw transaction hex', 'INVALID_RAW_TX'),
-  BODY_TOO_LARGE: validationError('Request body too large (max 1MB)', 'BODY_TOO_LARGE'),
   RATE_LIMITED: validationError('Rate limit exceeded', 'RATE_LIMITED'),
   NOT_FOUND: validationError('Resource not found', 'NOT_FOUND'),
   INTERNAL: validationError('Internal server error', 'INTERNAL_ERROR'),

@@ -123,6 +123,8 @@ export async function GET(request: NextRequest) {
       builder: 'AI Indigo',
       philosophy: 'No tokens. Product is the value. Ship > talk.',
       poweredBy: ['PCEF/NLx402', 'zkRune', 'Clawd Bot patterns', 'Utopian encryption'],
+      llmsTxt: '/llms.txt',
+      agentSkills: '/api/v1/agent-skills',
     },
   });
 }

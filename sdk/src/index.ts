@@ -184,7 +184,16 @@ export class BTCFi {
     return !!(this.evmPrivateKey || this.svmPrivateKey);
   }
 
-  /** Build payment header for 402 auto-retry */
+  /**
+   * Build payment header for 402 auto-retry.
+   *
+   * WARNING (T19): The Solana path (lines 202-208) creates a SIMULATED payment proof.
+   * It generates a dummy base64-encoded JSON object — this is NOT a real x402 proof.
+   * The EVM/Base path attempts real x402 via @x402/evm, falling back to simulated proof.
+   *
+   * TODO: Replace Solana path with real NLx402 facilitator integration.
+   * TODO: Remove EVM fallback dummy proof once @x402/evm is stable.
+   */
   private async buildPaymentHeader(requirements: Record<string, unknown>): Promise<string | null> {
     try {
       if (this.paymentNetwork === 'base' && this.evmPrivateKey) {
@@ -192,6 +201,7 @@ export class BTCFi {
           const x402evm = await import('@x402/evm' as string);
           return await x402evm.createPaymentHeader(this.evmPrivateKey, requirements);
         } catch {
+          // FALLBACK (simulated — not a real x402 proof):
           return btoa(JSON.stringify({
             network: 'base', amount: requirements.maxAmountRequired,
             payTo: requirements.payTo, asset: requirements.asset,
@@ -199,6 +209,8 @@ export class BTCFi {
           }));
         }
       } else if (this.paymentNetwork === 'solana' && this.svmPrivateKey) {
+        // SIMULATED — not a real x402/NLx402 proof. Server must accept or reject.
+        // TODO: Replace with real NLx402 facilitator integration.
         return btoa(JSON.stringify({
           network: 'solana', amount: requirements.maxAmountRequired,
           payTo: requirements.payTo, asset: requirements.asset,

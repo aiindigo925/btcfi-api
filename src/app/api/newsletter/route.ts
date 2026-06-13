@@ -35,12 +35,27 @@ export async function POST(request: NextRequest) {
     }
 
     if (!BEEHIIV_API_KEY || !BEEHIIV_PUBLICATION_ID) {
-      // Fallback: log subscription request
-      console.log(`[newsletter] Subscription request from IP: ${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}`);
+      // Store subscription in Redis until Beehiiv is configured
+      try {
+        const redis = getRedis();
+        const pendingKey = `newsletter:pending:${email}`;
+        await redis.hset(pendingKey, {
+          email,
+          subscribedAt: new Date().toISOString(),
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+          status: 'pending_config',
+        });
+        await redis.expire(pendingKey, 86400 * 90); // 90 days
+        // Track count for migration
+        await redis.incr('newsletter:pending:count');
+      } catch {
+        // Redis down — log only
+        console.log(`[newsletter] Pending subscription (Redis unavailable): ${email}`);
+      }
       return NextResponse.json({
         success: true,
-        message: 'Subscription recorded',
-        note: 'Beehiiv integration pending configuration',
+        message: 'Subscription recorded — pending Beehiiv configuration',
+        status: 'pending',
       });
     }
 
