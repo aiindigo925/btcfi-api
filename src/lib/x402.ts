@@ -38,6 +38,13 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/intelligence/sopr': 0.02,
   '/api/v1/intelligence/nupl': 0.02,
   '/api/v1/intelligence/hodl-waves': 0.02,
+  // Ordinals/Lightning/L2 ($0.02)
+  '/api/v1/ordinals': 0.02,
+  '/api/v1/intelligence/lightning': 0.02,
+  '/api/v1/intelligence/l2': 0.02,
+  '/api/v1/intelligence/entity': 0.05,
+  // Marketplace ($0.01)
+  '/api/v1/marketplace': 0.01,
   // Security ($0.02)
   '/api/v1/security': 0.02,
   // Solv Protocol ($0.02)
