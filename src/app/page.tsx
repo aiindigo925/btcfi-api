@@ -116,6 +116,18 @@ export default async function Home() {
         </a>
       </div>
 
+      {/* ═══ BINANCE REFERRAL BANNER ═══ */}
+      <div style={{ marginBottom: '48px' }}>
+        <a href="https://www.binance.com/activity/referral-entry/CPA?ref=CPA_005M12A6FE&utm_medium=app_share_link_telegram" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1400 100%)', border: '1px solid #f0b90b33', borderRadius: '10px', padding: '16px 24px', textDecoration: 'none', flexWrap: 'wrap' as const }}>
+          <span style={{ fontSize: '24px' }}>₿</span>
+          <div>
+            <div style={{ color: '#f0b90b', fontSize: '15px', fontWeight: 700 }}>Sign up on Binance — World&apos;s Largest Crypto Exchange</div>
+            <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>Earn a <span style={{ color: '#f0b90b', fontWeight: 600 }}>$100 trading fee rebate voucher</span> when you register</div>
+          </div>
+          <span style={{ color: '#f0b90b', fontSize: '14px', fontWeight: 600, marginLeft: 'auto', whiteSpace: 'nowrap' as const }}>Get $100 Rebate →</span>
+        </a>
+      </div>
+
       {/* ═══ 2. FREE FOR HUMANS ═══ */}
       <div style={css.section}>
         <h2 style={css.sectionTitle}>Free for Humans <span style={{ ...css.badge, background: '#001a0a', color: '#4ade80' }}>no signup</span></h2>
