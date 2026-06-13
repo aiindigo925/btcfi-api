@@ -178,7 +178,9 @@ export async function broadcastTx(txHex: string): Promise<string> {
 export async function getBlockHeight(): Promise<number> {
   const res = await fetch(`${MEMPOOL_API}/blocks/tip/height`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error('Failed to fetch block height');
-  return parseInt(await res.text());
+  const n = parseInt(await res.text());
+  if (isNaN(n)) throw new Error('Invalid block height response');
+  return n;
 }
 
 export async function getBlockHash(height: number): Promise<string> {

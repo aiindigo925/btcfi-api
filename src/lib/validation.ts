@@ -114,14 +114,6 @@ export function isValidSolanaAddress(address: string): boolean {
   return SOLANA_ADDRESS_REGEX.test(address);
 }
 
-// ============ REQUEST BODY ============
-
-const MAX_BODY_SIZE = 1_000_000; // 1MB
-
-export function validateBodySize(body: string): boolean {
-  return Buffer.byteLength(body, 'utf8') <= MAX_BODY_SIZE;
-}
-
 // ============ ERROR FACTORY ============
 
 export interface ValidationError {

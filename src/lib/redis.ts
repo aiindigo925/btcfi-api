@@ -13,3 +13,30 @@ export function getRedis(): Redis {
   }
   return _redis;
 }
+
+export async function safeGet(key: string): Promise<string | null> {
+  try {
+    return await getRedis().get(key);
+  } catch {
+    return null;
+  }
+}
+
+export async function safeSet(key: string, value: string, ttlSeconds?: number): Promise<void> {
+  try {
+    const redis = getRedis();
+    if (ttlSeconds) {
+      await redis.set(key, value, { ex: ttlSeconds } as any);
+    } else {
+      await redis.set(key, value);
+    }
+  } catch {}
+}
+
+export async function safeIncr(key: string): Promise<number> {
+  try {
+    return await getRedis().incr(key);
+  } catch {
+    return 0;
+  }
+}

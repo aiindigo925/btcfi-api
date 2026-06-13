@@ -13,6 +13,7 @@ async function rpcCall(method: string, params: unknown[] = [], rpcUrl = RPC_URL)
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     signal: AbortSignal.timeout(10000),
   });
+  if (!res.ok) throw new Error(`Solana RPC ${res.status}: ${res.statusText}`);
   const json = await res.json();
   if (json.error) throw new Error(json.error.message);
   return json.result;

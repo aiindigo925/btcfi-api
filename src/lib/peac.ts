@@ -8,7 +8,7 @@
  * Signing: HMAC-SHA256 (upgradeable to Ed25519 when keypair is configured)
  */
 
-import { createHmac } from 'crypto';
+import { createHmac, createHash } from 'crypto';
 
 const PEAC_SECRET = process.env.PEAC_SIGNING_KEY;
 if (!PEAC_SECRET) {
@@ -40,7 +40,7 @@ function base64url(data: string): string {
 }
 
 function sha256short(data: string): string {
-  return createHmac('sha256', 'hash').update(data).digest('hex').slice(0, 16);
+  return createHash('sha256').update(data).digest('hex').slice(0, 16);
 }
 
 /**

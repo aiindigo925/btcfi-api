@@ -188,6 +188,7 @@ export async function verifyPayment(
     const response = await fetch(`${facilitator.url}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         paymentHeader,
         paymentRequirements: requirements,

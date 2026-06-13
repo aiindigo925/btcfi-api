@@ -39,8 +39,6 @@ export async function GET(request: NextRequest) {
   const dayRevenue = (dayRequests * avgPrice).toFixed(2);
   const weekRevenue = (weekRequests * avgPrice).toFixed(2);
 
-  // Estimate active clients by tier (rough heuristic from recent counts)
-  const freeActive = Math.max(0, Math.floor(stats.total * 0.6) - (stats.byNetwork.base || 0) - (stats.byNetwork.solana || 0));
   const paidActive = (stats.byNetwork.base || 0) + (stats.byNetwork.solana || 0);
 
   // Top endpoints (from tier breakdown, approximated)
@@ -63,7 +61,7 @@ export async function GET(request: NextRequest) {
       week: weekRevenue,
       total: totalRevenue.toFixed(2),
       requestsDay: dayRequests,
-      paidRequestsDay: Math.floor(dayRequests * (paidActive / Math.max(1, paidActive + freeActive))),
+      paidRequestsDay: dayRequests,
       byTier: revenueByTier,
       source: stats.source,
       treasury: {
@@ -72,13 +70,10 @@ export async function GET(request: NextRequest) {
       },
     },
     rateLimits: {
-      freeActive: freeActive,
-      signedActive: 0,
+      freeActive: '-',
       paidActive: paidActive,
-      stakedActive: 0,
       tiers: {
         free: '100/min',
-        signed: '500/min',
         paid: 'unlimited',
         staked: 'unlimited',
       },
