@@ -56,9 +56,9 @@ const PLAIN_FOOTER =
 // Footer for channel posts
 const CH_FOOTER =
   '\n\n\u2014\n'
-  + '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n'
-  + '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)\n'
-  + '_Free for humans_';
+  + '\ud83d\udd17 <a href="https://btcfi.aiindigo.com">btcfi.aiindigo.com</a> | <a href="https://t.me/BTC_Fi_Bot">@BTC_Fi_Bot</a>\n'
+  + '<a href="https://aiindigo.com">AI Indigo</a> | <a href="https://futuretoolsai.com">FutureTools AI</a> | <a href="https://openclawterrace.com">OpenClaw Terrace</a>\n'
+  + '<i>Free for humans</i>';
 
 // Lazy singleton
 let _bot: Bot | null = null;
@@ -135,9 +135,8 @@ async function checkCommandRateLimit(userId: number): Promise<boolean> {
 // ============ WHALE CHANNEL POSTING (MP5 Phase 1) =
 
 /** Build a relatable comparison line for whale posts based on USD value. */
-function buildWhaleComparison(usdEscaped: string): string {
-  // Parse back to raw number (the value was already escaped for Markdown)
-  const raw = parseFloat(usdEscaped.replace(/,/g, '')) || 0;
+function buildWhaleComparison(usdFormatted: string): string {
+  const raw = parseFloat(usdFormatted.replace(/,/g, '')) || 0;
   if (raw <= 0) return '';
   let line = '';
   if (raw < 500000) {
@@ -151,7 +150,7 @@ function buildWhaleComparison(usdEscaped: string): string {
   } else {
     line = '\ud83c\udfd7\ufe0f \u2248 ' + Math.round(raw / 50000000) + ' skyscrapers';
   }
-  return '\n' + esc(line);
+  return '\n' + line;
 }
 
 export async function postWhaleToChannel(whale: {
@@ -170,10 +169,8 @@ export async function postWhaleToChannel(whale: {
   try {
     const b = await getBot();
 
-    const btc = esc(whale.totalValueBtc);
-    const usd = esc(parseFloat(whale.totalValueUsd).toLocaleString());
-    const txShort = esc(whale.txid.slice(0, 16));
-    const fr = esc(whale.feeRate);
+    const usdFormatted = parseFloat(whale.totalValueUsd).toLocaleString('en-US');
+    const txShort = whale.txid.slice(0, 16);
     const sig = whale.signal || 'transfer';
 
     // Scale emoji count by BTC value:
@@ -188,16 +185,16 @@ export async function postWhaleToChannel(whale: {
     let header: string;
     if (sig === 'buy') {
       const arrows = '\ud83d\udfe2'.repeat(scale);
-      header = arrows + ' *WHALE BUY* ' + arrows;
+      header = arrows + ' <b>WHALE BUY</b> ' + arrows;
     } else {
       const arrows = '\ud83d\udd34'.repeat(scale);
-      header = arrows + ' *WHALE SELL* ' + arrows;
+      header = arrows + ' <b>WHALE SELL</b> ' + arrows;
     }
 
     // Signal reason line
     let signalLine = '';
     if (sig !== 'transfer' && whale.signalReason) {
-      signalLine = '\ud83d\udcca _' + esc(whale.signalReason) + '_\n';
+      signalLine = '\ud83d\udcca <i>' + escHtml(whale.signalReason) + '</i>\n';
     }
 
     // I/O line (only if we have data)
@@ -207,16 +204,16 @@ export async function postWhaleToChannel(whale: {
     }
 
     const msg = header + '\n\n'
-      + '\ud83d\udcb0 ' + btc + ' BTC \\(\\$' + usd + '\\)\n'
-      + '\ud83d\udcc4 TX: `' + txShort + '\\.\\.\\.`' + '`\n'
-      + '\u26fd Fee: ' + fr + '\n'
+      + '\ud83d\udcb0 ' + escHtml(whale.totalValueBtc) + ' BTC (<code>$' + escHtml(usdFormatted) + '</code>)\n'
+      + '\ud83d\udcc4 TX: <code>' + escHtml(txShort) + '...</code>\n'
+      + '\u26fd Fee: ' + escHtml(whale.feeRate) + '\n'
       + ioLine
       + signalLine
-      + buildWhaleComparison(usd)
+      + buildWhaleComparison(usdFormatted)
       + CH_FOOTER;
 
     await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'HTML',
       link_preview_options: { is_disabled: true },
     });
   } catch (err) {
@@ -238,7 +235,12 @@ async function api(path: string): Promise<any> {
 }
 
 function esc(s: string): string {
-  return String(s).replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+  return String(s).replace(/[_*[\\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+}
+
+/** Escape text for HTML parse_mode. */
+function escHtml(s: string): string {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function looksLikeBtcAddress(s: string): boolean {
