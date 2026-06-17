@@ -219,7 +219,11 @@ async function api(path: string): Promise<any> {
     headers,
     signal: AbortSignal.timeout(10000),
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`[BOT-API] ${path} → ${res.status}: ${body.slice(0, 200)}`);
+    throw new Error(`API ${res.status}`);
+  }
   return res.json();
 }
 
