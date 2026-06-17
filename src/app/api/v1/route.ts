@@ -83,6 +83,14 @@ export async function GET(request: NextRequest) {
         events: { url: '/api/v1/stream', method: 'GET', price: '$0.01', status: 'live', description: 'SSE stream: new_block, fee_change, mempool_surge' },
         whales: { url: '/api/v1/stream/whales', method: 'GET', price: '$0.01', status: 'live', description: 'SSE whale tx alerts. Query: ?min=100' },
       },
+      // ── Webhooks / Push Notifications ──
+      webhooks: {
+        list: { url: '/api/v1/webhooks', method: 'GET', price: 'free', status: 'live', description: 'List registered webhooks' },
+        register: { url: '/api/v1/webhooks', method: 'POST', price: 'free', status: 'live', description: 'Register webhook with URL + triggers' },
+        delete: { url: '/api/v1/webhooks?id={id}', method: 'DELETE', price: 'free', status: 'live', description: 'Remove a webhook' },
+        test: { url: '/api/v1/webhooks/test', method: 'POST', price: 'free', status: 'live', description: 'Fire test payload to webhook' },
+        evaluate: { url: '/api/v1/webhooks/evaluate', method: 'POST', price: 'free', status: 'live', description: 'Evaluate all triggers (cron)' },
+      },
       // ── Batch Queries ──
       batch: {
         query: { url: '/api/v1/batch', method: 'POST', price: '$0.01 base', status: 'live', description: 'Parallel batch: balances ($0.01/ea), risk ($0.02/ea), entities ($0.05/ea)' },

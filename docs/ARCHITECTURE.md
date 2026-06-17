@@ -31,11 +31,12 @@ Agent / Browser / Bot
 | Solv Protocol | 4 | $0.02 | SolvBTC reserves, yield, liquidity, risk assessment |
 | ZK Proofs | 4 | $0.01–$0.03 | Balance range, UTXO age, set membership, proof verification |
 | Streams | 2 | $0.01 | Server-Sent Events for blocks, whale transactions |
+| Webhooks | 5 | Free | Push notifications with HMAC signatures (X-API-Key auth) |
 | System | 2 | Free | Health check, staking status |
 | Ethereum | 3 | $0.01 | ETH gas, address balance, transaction details |
 | Solana | 2 | $0.01 | SOL priority fees, address balance |
 
-**Total: 33 public endpoints** (31 paid + 2 free)
+**Total: 38 public endpoints** (31 paid + 2 system + 5 webhooks)
 
 ## Middleware Pipeline
 

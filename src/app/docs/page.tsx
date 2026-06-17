@@ -34,7 +34,7 @@ export default function DocsPage() {
       {/* Quick nav */}
       <div style={css.nav}>
         <div style={{ color: '#666', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Contents</div>
-        {['Quick Start', 'Authentication', 'x402 Payments', 'Core Endpoints', 'Batch Queries', 'Intelligence', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
+        {['Quick Start', 'Authentication', 'API Keys', 'x402 Payments', 'Core Endpoints', 'Batch Queries', 'Intelligence', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
           <a key={s} href={`#${s.toLowerCase().replace(/ /g, '-')}`} style={css.navLink}>{s}</a>
         ))}
       </div>
@@ -59,12 +59,13 @@ npm install @aiindigo/btcfi`}</div>
       {/* Authentication */}
       <h2 style={css.h2} id="authentication">Authentication</h2>
       <p style={css.p}>
-        BTCFi uses three authentication tiers. No API keys or accounts needed.
+        BTCFi uses four authentication tiers. No API keys needed by default — but developer API keys are available as a simpler alternative.
       </p>
       <table style={css.table}>
         <thead><tr><th style={css.th}>Tier</th><th style={css.th}>Rate Limit</th><th style={css.th}>How</th></tr></thead>
         <tbody>
           <tr><td style={css.td}>Free</td><td style={css.td}>100/min</td><td style={css.td}>No headers needed</td></tr>
+          <tr><td style={css.td}>API Key</td><td style={css.td}>100-∞/day</td><td style={css.td}>X-API-Key header (tier-based)</td></tr>
           <tr><td style={css.td}>Signed</td><td style={css.td}>500/min</td><td style={css.td}>X-Signature + X-Nonce + X-Signer headers</td></tr>
           <tr><td style={css.td}>Paid</td><td style={css.td}>Unlimited</td><td style={css.td}>X-Payment header (x402 proof)</td></tr>
           <tr><td style={css.td}>Staked</td><td style={css.td}>Unlimited</td><td style={css.td}>X-Staker header with staked wallet</td></tr>
@@ -73,14 +74,47 @@ npm install @aiindigo/btcfi`}</div>
 
       <h3 style={css.h3}>Wallet Signature Auth</h3>
       <p style={css.p}>Sign requests with your wallet for higher rate limits. Format: <span style={css.inline}>METHOD:PATH:NONCE:TIMESTAMP</span></p>
-      <div style={css.code}>{`Headers:
-  X-Signature: <base64-signature>
-  X-Nonce: <unique-uuid>
-  X-Signer: <wallet-address>  (0x... for EVM, base58 for Solana)
-  X-Timestamp: <unix-seconds>
+      <div style={css.code}>{`Headers:\n  X-Signature: <base64-signature>\n  X-Nonce: <unique-uuid>\n  X-Signer: <wallet-address>  (0x... for EVM, base58 for Solana)\n  X-Timestamp: <unix-seconds>\n\nMessage to sign: "GET:/api/v1/fees:abc123:1707700000"\nSupported: Ed25519 (Solana), secp256k1 (EVM)`}</div>
 
-Message to sign: "GET:/api/v1/fees:abc123:1707700000"
-Supported: Ed25519 (Solana), secp256k1 (EVM)`}</div>
+      {/* API Keys */}
+      <h2 style={css.h2} id="api-keys">API Keys</h2>
+      <p style={css.p}>
+        Developer API keys provide a simpler alternative to x402 micropayments. Include your key in the <span style={css.inline}>X-API-Key</span> header and access all endpoints with tier-based daily quotas.
+      </p>
+      <div style={css.code}>{`# Include your API key
+curl -H "X-API-Key: btcfi_your_key_here" \\
+     https://btcfi.aiindigo.com/api/v1/fees
+
+# Response headers include usage info:
+# X-API-Key-Tier: free
+# X-API-Key-Remaining: 99
+# X-API-Key-Daily-Limit: 100`}</div>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Tier</th><th style={css.th}>Price</th><th style={css.th}>Daily Limit</th><th style={css.th}>x402 Required</th></tr></thead>
+        <tbody>
+          <tr><td style={css.td}>Free</td><td style={css.td}>Free</td><td style={css.td}>100 calls/day</td><td style={css.td}>No (bypasses x402)</td></tr>
+          <tr><td style={css.td}>Pro</td><td style={css.td}>$29/mo</td><td style={css.td}>1,000 calls/day</td><td style={css.td}>No (bypasses x402)</td></tr>
+          <tr><td style={css.td}>Enterprise</td><td style={css.td}>$299/mo</td><td style={css.td}>Unlimited</td><td style={css.td}>No (bypasses x402)</td></tr>
+        </tbody>
+      </table>
+      <p style={css.p}>
+        API keys bypass x402 micropayment requirements entirely. Free tier keys still have a daily quota but do not require payment. Manage your keys at <a href="/dashboard/api-keys" style={css.link}>/dashboard/api-keys</a>.
+      </p>
+      <div style={css.code}>{`# Admin: Create a key (requires ADMIN_API_KEY)
+curl -X POST https://btcfi.aiindigo.com/api/admin/api-keys \\
+  -H "X-Admin-Key: your_admin_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"tier": "free", "label": "My App"}'
+
+# Admin: List all keys
+curl -H "X-Admin-Key: your_admin_key" \\
+  https://btcfi.aiindigo.com/api/admin/api-keys
+
+# Admin: Revoke a key
+curl -X DELETE https://btcfi.aiindigo.com/api/admin/api-keys \\
+  -H "X-Admin-Key: your_admin_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"keyHash": "abc123..."}'`}</div>
 
       {/* x402 Payments */}
       <h2 style={css.h2} id="x402-payments">x402 Payments</h2>

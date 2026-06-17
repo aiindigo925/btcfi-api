@@ -35,6 +35,11 @@ SDK: npm install @aiindigo/btcfi (28 methods)
 - GET /api/health — System health check
 - GET /api/v1 — API index with all endpoint listings
 - GET /api/v1/staking/status — Staking tier and rate limit status
+- GET /api/v1/webhooks — List webhooks (X-API-Key required)
+- POST /api/v1/webhooks — Register webhook (X-API-Key required)
+- DELETE /api/v1/webhooks?id={id} — Remove webhook (X-API-Key required)
+- POST /api/v1/webhooks/test — Test fire webhook (X-API-Key required)
+- POST /api/v1/webhooks/evaluate — Evaluate triggers (X-API-Key required)
 - GET /.well-known/x402-manifest.json — Payment manifest
 - GET /.well-known/peac.txt — Usage terms and receipts
 
@@ -89,6 +94,39 @@ SDK: npm install @aiindigo/btcfi (28 methods)
 ### Solana ($0.01)
 - GET /api/v1/sol/fees — SOL priority fees
 - GET /api/v1/sol/address/{addr} — SOL address balance
+
+## Webhooks / Push Notifications (Free, requires X-API-Key)
+- GET /api/v1/webhooks — List your registered webhooks
+- POST /api/v1/webhooks — Register webhook (body: url, triggers[], secret)
+- DELETE /api/v1/webhooks?id={id} — Remove a webhook
+- POST /api/v1/webhooks/test — Fire test payload (body: event?, webhook_id?)
+- POST /api/v1/webhooks/evaluate — Evaluate triggers against current conditions
+
+### Trigger Types
+- whale: fires when tx >= threshold (default 10 BTC)
+- price_above: fires when BTC price crosses above threshold
+- price_below: fires when BTC price crosses below threshold
+- fee_spike: fires when fee rate > 2x 24h average
+- block_mined: fires on every new block
+
+### Webhook Payload
+JSON POST with HMAC-SHA256 signature:
+```
+{
+  "event": "whale",
+  "timestamp": "2026-06-17T...",
+  "data": { "txid": "...", "amount_btc": "...", "amount_usd": "...", "signal": "..." },
+  "webhook_id": "wh_...",
+  "signature": "hmac-sha256-hex"
+}
+```
+Verify signature using your webhook secret with HMAC-SHA256.
+
+### Headers
+- X-Webhook-ID: webhook identifier
+- X-Webhook-Signature: HMAC-SHA256 signature
+- X-Webhook-Event: trigger type
+- X-Webhook-Delivery: unique delivery ID
 
 ## Agent Integration
 - MCP: Use npx @aiindigo/btcfi-mcp for Claude, ChatGPT, Gemini integration

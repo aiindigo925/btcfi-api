@@ -10,6 +10,7 @@ const nav = [
   { href: '/dashboard/whales', label: 'Whales' },
   { href: '/dashboard/fees', label: 'Fee Calc' },
   { href: '/dashboard/revenue', label: '💰 Revenue' },
+  { href: '/dashboard/api-keys', label: '🔑 API Keys' },
   { href: '/dashboard/admin', label: '🔒 Admin' },
 ];
 

@@ -1,13 +1,20 @@
 /**
- * BTCFi API Middleware — x402 Payment Enforcement, Rate Limiting, CORS, Security Headers
+ * BTCFi API Middleware — x402 Payment Enforcement, API Key Auth, Rate Limiting, CORS, Security Headers
  *
  * This is the critical enforcement layer that:
  * 1. Adds CORS headers to all API responses
  * 2. Adds security headers
- * 3. Checks x402 payment for paid endpoints (when X402_ENABLED=true)
- * 4. Applies rate limiting by tier (free/paid/staked)
- * 5. Records payments for revenue tracking
- * 6. Handles encrypted response setup
+ * 3. Validates API keys (X-API-Key header) with daily quota enforcement
+ * 4. Checks x402 payment for paid endpoints (when X402_ENABLED=true)
+ * 5. Applies rate limiting by tier (free/paid/staked)
+ * 6. Records payments for revenue tracking
+ * 7. Handles encrypted response setup
+ *
+ * Auth priority:
+ *   1. Internal service key (X-Internal-Key) — full bypass
+ *   2. API key (X-API-Key) — tier-based daily quota, free tier bypasses x402
+ *   3. x402 payment (X-Payment) — per-request micropayment
+ *   4. Free tier — IP-based hourly limits
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,6 +23,7 @@ import { getRateLimitTier, RATE_LIMITS, type SignerTier } from '@/lib/request-si
 import { recordPaymentV2 } from '@/lib/revenue';
 import { generatePEACReceipt } from '@/lib/peac';
 import { handleFreeTier, classifyPath, getFreeTierStatus } from '@/lib/free-tier-middleware';
+import { validateApiKey, trackUsage, checkQuota, type ApiKeyTier } from '@/lib/api-keys';
 
 // ============ RATE LIMITING (UPSTASH REDIS) ============
 
@@ -64,8 +72,8 @@ function getCorsHeaders(request: NextRequest): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Payment, X-Payment-Network, X-Signature, X-Nonce, X-Signer, X-Timestamp, X-Encrypt-Response, X-Staker, Authorization, X-Internal-Key',
-    'Access-Control-Expose-Headers': 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Payment-Required, X-Payment-Amount, X-Payment-Currency, X-Payment-Networks, X-PEAC-Receipt',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Payment, X-Payment-Network, X-Signature, X-Nonce, X-Signer, X-Timestamp, X-Encrypt-Response, X-Staker, Authorization, X-Internal-Key, X-API-Key',
+    'Access-Control-Expose-Headers': 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Payment-Required, X-Payment-Amount, X-Payment-Currency, X-Payment-Networks, X-PEAC-Receipt, X-API-Key-Tier, X-API-Key-Remaining, X-API-Key-Daily-Limit',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -97,6 +105,7 @@ const FREE_PATHS = [
   '/api/v1/safe',
   '/api/mcp',
   '/api/v1/agent-skills',
+  '/api/v1/api-keys',
 ];
 
 /** Paths that don't go through middleware at all */
@@ -185,6 +194,101 @@ export async function middleware(request: NextRequest) {
     Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
     Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
     return response;
+  }
+
+  // ============ API KEY AUTH ============
+  const apiKeyHeader = request.headers.get('X-API-Key') || request.headers.get('x-api-key');
+
+  if (apiKeyHeader) {
+    try {
+      const validation = await validateApiKey(apiKeyHeader);
+
+      if (!validation.valid) {
+        return NextResponse.json(
+          {
+            error: 'Unauthorized',
+            code: 401,
+            message: validation.error || 'Invalid API key',
+          },
+          {
+            status: 401,
+            headers: {
+              ...getCorsHeaders(request),
+              ...SECURITY_HEADERS,
+            },
+          }
+        );
+      }
+
+      const keyInfo = validation.info!;
+      const tierConfig = {
+        free: { dailyLimit: 100 },
+        pro: { dailyLimit: 1000 },
+        enterprise: { dailyLimit: Infinity },
+      }[keyInfo.tier];
+
+      // Check daily quota
+      const quota = await checkQuota(keyInfo.keyHash, keyInfo.tier);
+      if (!quota.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Daily quota exceeded',
+            code: 429,
+            tier: keyInfo.tier,
+            usedToday: quota.usedToday,
+            dailyLimit: tierConfig.dailyLimit,
+            resetAt: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+            upgrade: keyInfo.tier === 'free'
+              ? 'Upgrade to Pro ($29/mo, 1000 calls/day) or Enterprise ($299/mo, unlimited)'
+              : keyInfo.tier === 'pro'
+                ? 'Upgrade to Enterprise ($299/mo, unlimited)'
+                : undefined,
+          },
+          {
+            status: 429,
+            headers: {
+              ...getCorsHeaders(request),
+              ...SECURITY_HEADERS,
+              'X-API-Key-Tier': keyInfo.tier,
+              'X-API-Key-Remaining': '0',
+              'X-API-Key-Daily-Limit': String(tierConfig.dailyLimit),
+              'X-RateLimit-Limit': String(tierConfig.dailyLimit),
+              'X-RateLimit-Remaining': '0',
+            },
+          }
+        );
+      }
+
+      // Track usage
+      trackUsage(keyInfo.keyHash, pathname).catch(() => {}); // fire and forget
+
+      // Free tier API keys bypass x402 payment
+      if (keyInfo.tier === 'free') {
+        const response = NextResponse.next();
+        Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
+        Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+        response.headers.set('X-API-Key-Tier', keyInfo.tier);
+        response.headers.set('X-API-Key-Remaining', String(quota.remaining));
+        response.headers.set('X-API-Key-Daily-Limit', String(tierConfig.dailyLimit));
+        response.headers.set('X-RateLimit-Limit', String(tierConfig.dailyLimit));
+        response.headers.set('X-RateLimit-Remaining', String(quota.remaining));
+        return response;
+      }
+
+      // Pro/Enterprise keys: skip x402 payment, just pass through with tracking
+      const response = NextResponse.next();
+      Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
+      Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+      response.headers.set('X-API-Key-Tier', keyInfo.tier);
+      response.headers.set('X-API-Key-Remaining', String(quota.remaining === Infinity ? 'unlimited' : quota.remaining));
+      response.headers.set('X-API-Key-Daily-Limit', String(tierConfig.dailyLimit === Infinity ? 'unlimited' : tierConfig.dailyLimit));
+      response.headers.set('X-RateLimit-Limit', tierConfig.dailyLimit === Infinity ? 'unlimited' : String(tierConfig.dailyLimit));
+      response.headers.set('X-RateLimit-Remaining', quota.remaining === Infinity ? 'unlimited' : String(quota.remaining));
+      return response;
+    } catch (err) {
+      console.error('[API-Key] Validation error:', err);
+      // Fail open — proceed to normal auth flow
+    }
   }
 
   // x402 payment check for paid endpoints
