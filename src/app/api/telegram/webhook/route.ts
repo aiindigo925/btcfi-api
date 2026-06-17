@@ -4,65 +4,20 @@
  * POST /api/telegram/webhook
  *
  * Security:
- * - Telegram IP allowlisting (only Telegram's servers can hit this)
  * - Timing-safe secret token comparison
  * - Body size limits
  * - Content-Type validation
+ *
+ * NOTE: IP allowlisting removed — Vercel edge proxies ALL webhook
+ * requests, so x-forwarded-for shows Vercel IPs (104.21.x.x),
+ * not Telegram servers. Secret token verification is sufficient.
+ * See L285: aiindigo-docs-internal/memory
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 
 const SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
-
-/**
- * Telegram webhook servers IP ranges (from https://core.telegram.org/bots/webhooks)
- * These are the only IPs Telegram sends webhook updates from.
- */
-const TELEGRAM_IPS = [
-  '149.154.160.0/20',
-  '91.108.4.0/22',
-];
-
-function ip4ToInt(ip: string): number | null {
-  const parts = ip.split('.');
-  if (parts.length !== 4) return null;
-  let result = 0;
-  for (const part of parts) {
-    const n = parseInt(part, 10);
-    if (isNaN(n) || n < 0 || n > 255) return null;
-    result = (result << 8) + n;
-  }
-  return result >>> 0; // ensure unsigned
-}
-
-function ip4ToCidrRange(cidr: string): [number, number] | null {
-  const [base, prefixStr] = cidr.split('/');
-  const prefix = parseInt(prefixStr, 10);
-  const baseInt = ip4ToInt(base);
-  if (baseInt === null || isNaN(prefix) || prefix < 0 || prefix > 32) return null;
-  const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
-  return [(baseInt & mask) >>> 0, (baseInt | ~mask) >>> 0];
-}
-
-/** Pre-compute CIDR ranges for fast lookup */
-const CIDR_RANGES: [number, number][] = TELEGRAM_IPS.map(ip4ToCidrRange).filter(Boolean) as [number, number][];
-
-function isTelegramIP(ip: string): boolean {
-  const ipInt = ip4ToInt(ip);
-  if (ipInt === null) return false;
-  return CIDR_RANGES.some(([min, max]) => ipInt >= min && ipInt <= max);
-}
-
-/** Extract real client IP behind proxies */
-function getClientIP(request: NextRequest): string | null {
-  // Vercel puts the real IP in x-forwarded-for
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  const xri = request.headers.get('x-real-ip');
-  if (xri) return xri.trim();
-  return null;
-}
 
 /** Timing-safe token comparison to prevent timing attacks */
 function safeTokenCompare(a: string, b: string): boolean {
@@ -79,13 +34,6 @@ function safeTokenCompare(a: string, b: string): boolean {
 const MAX_BODY_BYTES = 64 * 1024; // 64 KB — Telegram updates should never be this large
 
 export async function POST(request: NextRequest) {
-  // --- IP allowlisting: reject anything not from Telegram's servers ---
-  const clientIP = getClientIP(request);
-  if (clientIP && !isTelegramIP(clientIP)) {
-    console.warn(`[Telegram] Rejected webhook from non-Telegram IP: ${clientIP}`);
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     return NextResponse.json({ error: 'Bot not configured' }, { status: 503 });
   }
