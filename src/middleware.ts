@@ -161,6 +161,15 @@ export async function middleware(request: NextRequest) {
   // Only apply payment/rate-limit logic to API routes
   if (!isApiPath(pathname)) return NextResponse.next();
 
+  // Internal service bypass (Telegram bot, etc.) — BEFORE rate limiting
+  const internalKey = request.headers.get('X-Internal-Key');
+  if (INTERNAL_API_KEY && internalKey === INTERNAL_API_KEY) {
+    const response = NextResponse.next();
+    Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
+    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+    return response;
+  }
+
   // Get client IP for rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
@@ -196,15 +205,6 @@ export async function middleware(request: NextRequest) {
         },
       }
     );
-  }
-
-  // Internal service bypass (Telegram bot, etc.)
-  const internalKey = request.headers.get('X-Internal-Key');
-  if (INTERNAL_API_KEY && internalKey === INTERNAL_API_KEY) {
-    const response = NextResponse.next();
-    Object.entries(getCorsHeaders(request)).forEach(([k, v]) => response.headers.set(k, v));
-    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
-    return response;
   }
 
   // ============ API KEY AUTH ============
