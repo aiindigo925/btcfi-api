@@ -5,7 +5,7 @@
 BTCFi API is a Next.js application deployed on Vercel that provides Bitcoin data and intelligence to AI agents via x402 micropayments.
 
 ```
-Agent / Browser / Bot
+Agent / Browser / Telegram Bot
         │
         ▼
   [Vercel Edge Middleware]
@@ -19,6 +19,12 @@ Agent / Browser / Bot
         ├── EVM RPCs (Solv Protocol on-chain reads)
         ├── Solana RPC (staking verification)
         └── Internal libraries (intelligence, threat, ZK proofs)
+
+┌──────────────────────────────────────────────┐
+│  Telegram Bot (local webhook server)         │
+│  PM2 process manager · Cloudflare Tunnel     │
+│  30+ commands → calls Vercel API (external)  │
+└──────────────────────────────────────────────┘
 ```
 
 ## Endpoint Groups
@@ -36,7 +42,7 @@ Agent / Browser / Bot
 | Ethereum | 3 | $0.01 | ETH gas, address balance, transaction details |
 | Solana | 2 | $0.01 | SOL priority fees, address balance |
 
-**Total: 38 public endpoints** (31 paid + 2 system + 5 webhooks)
+**Total: 80+ public endpoints** (70+ paid + 2 system + 5 webhooks)
 
 ## Middleware Pipeline
 
@@ -79,12 +85,12 @@ PEAC Protocol provides cryptographic payment receipts — signed proofs binding 
 | Package | npm | Description |
 |---------|-----|-------------|
 | `@aiindigo/btcfi` | SDK | TypeScript client with 28 methods, auto x402 payment |
-| `@aiindigo/btcfi-mcp` | MCP Server | 27 tools for Claude, ChatGPT, Gemini via stdio transport |
+| `@aiindigo/btcfi-mcp` | MCP Server | 35+ tools for Claude, ChatGPT, Gemini via stdio transport |
 
 ## Human Interfaces
 
 - **Web Dashboard** — `/dashboard` with overview, address lookup, whale watch, fee calculator
-- **Telegram Bot** — 9 commands + inline mode
+- **Telegram Bot** — 30+ commands, inline mode, webhooks push notifications. Runs as a local webhook server managed by PM2 and exposed via Cloudflare Tunnel.
 - **Chrome Extension** — Price badge, fee calculator, whale alerts, address inspector
 - **Swagger UI** — Interactive API docs at `/api/docs`
 

@@ -1,5 +1,26 @@
 # BTCFi API — Changelog
 
+## v4.3.0 (2026-06-17)
+
+### Telegram Bot — Local Webhook Server
+- Bot now runs locally via PM2 as a persistent process (`scripts/telegram-bot-webhook.ts`)
+- Cloudflare Tunnel exposes webhook at `btcfi-bot.aiindigo.com` — no more Vercel self-referencing
+- Webhook server listens on port 3400
+
+### Bot Now Free for Everyone
+- Removed pro/free tier gating — all features available to all users
+- No subscription checks, no tier restrictions
+
+### 15+ New Bot Commands
+- Expanded command set with new tools for BTCFi data access
+
+### Bug Fixes
+- Fixed MarkdownV2 `esc()` regex — character class was closing prematurely, dots were never escaped
+- Fixed dotenv loading — now explicitly requires `.env.local` path
+- Fixed ESM import hoisting — wrapped entry point in `async main()` for CJS compatibility
+
+---
+
 ## v4.2.0 (2026-06-17)
 
 ### Multi-Currency Price

@@ -3,7 +3,7 @@
 **Bitcoin Intelligence API for AI Agents**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
+[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
 
 Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com) · [GitHub](https://github.com/aiindigo925/btcfi-api)
 
@@ -247,9 +247,9 @@ BTCFi API uses **x402 micropayments** — no API keys, no OAuth, no subscription
 
 ## Free for Humans
 
-No payments, no signup. Just open Telegram:
-
-- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 28 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`, `/runes`, `/ordinals`, `/lightning`, `/portfolio`, `/taproot`, `/cluster`, `/graph`, `/batch`, `/webhooks`, `/price eur`, `/price gbp`, `/price jpy`
+**Completely free — no signup, no API keys, no secrets.** This is a PUBLIC repository. Just open Telegram:
+- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 38 commands + inline mode:
+  `/start` `/help` `/price` `/whale` `/fear` `/hash` `/mempool` `/halving` `/etf` `/funding` `/dominance` `/mining` `/lightning` `/signal` `/l2` `/block` `/mvrv` `/sopr` `/nupl` `/entity` `/portfolio` `/staking` `/threat` `/eth_addr` `/sol_addr` `/digest` `/alerts` `/watch` `/unwatch` `/watchlist` `/runes` `/ordinals` `/taproot` `/cluster` `/graph` `/batch` `/webhooks` `/premium`
 - **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min
 - **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch
 
