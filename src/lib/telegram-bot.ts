@@ -38,8 +38,8 @@ const WHALE_CHANNEL_ID = process.env.WHALE_CHANNEL_ID || '';
 // Footer for DM bot responses
 const FOOTER =
   '\n\n\u2014\n'
-  + '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n'
-  + '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
+  + '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi\\.aiindigo\\.com) _\\|_ `npm i @aiindigo/btcfi`\n'
+  + '[AI Indigo](https://aiindigo\\.com) _\\|_ [FutureTools AI](https://futuretoolsai\\.com) _\\|_ [OpenClaw Terrace](https://openclawterrace\\.com)';
 
 // Plain footer for non-markdown responses
 const PLAIN_FOOTER =
