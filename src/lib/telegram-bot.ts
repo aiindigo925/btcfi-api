@@ -38,8 +38,8 @@ const WHALE_CHANNEL_ID = process.env.WHALE_CHANNEL_ID || '';
 // Footer for DM bot responses
 const FOOTER =
   '\n\n\u2014\n'
-  + '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi\\.aiindigo\\.com) _\\|_ `npm i @aiindigo/btcfi`\n'
-  + '[AI Indigo](https://aiindigo\\.com) _\\|_ [FutureTools AI](https://futuretoolsai\\.com) _\\|_ [OpenClaw Terrace](https://openclawterrace\\.com)';
+  + '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n'
+  + '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
 
 // Plain footer for non-markdown responses
 const PLAIN_FOOTER =
@@ -93,7 +93,7 @@ async function getBot(): Promise<Bot> {
       { command: 'watchlist', description: 'Your watched addresses' },
       { command: 'alerts', description: 'Advanced alerts' },
       { command: 'help', description: 'Show commands' },
-      { command: 'digest', description: 'Daily BTC digest (Pro)' },
+      { command: 'digest', description: 'Daily BTC digest' },
       { command: 'eth_gas', description: 'ETH gas prices' },
       { command: 'sol_fees', description: 'SOL network fees' },
       { command: 'help', description: 'Show all commands' },
@@ -219,11 +219,7 @@ async function api(path: string): Promise<any> {
     headers,
     signal: AbortSignal.timeout(10000),
   });
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`[BOT-API] ${path} → ${res.status}: ${body.slice(0, 200)}`);
-    throw new Error(`API ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
 
@@ -384,9 +380,10 @@ function registerCommands(b: Bot): void {
     + '/watch \u2014 Watch an address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \\u2014 Advanced alerts\\n'
-    + '/digest \\u2014 Daily BTC digest\\n'
-    + '/help \\u2014 This message'
+    + '/alerts \u2014 Advanced alerts\n'
+    + '/digest \u2014 Daily BTC digest\n'
+    + '/help \u2014 This message'
+    + '/help \u2014 This message'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
@@ -422,10 +419,11 @@ function registerCommands(b: Bot): void {
     + '/watch \u2014 Watch address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \\u2014 Advanced alerts \\\\(whale/price/fee\\\\)\\n\\n'
-    + '*Tools*\\n'
-    + '/portfolio \\u2014 Multi-address portfolio\\n'
-    + '/digest \\u2014 Daily BTC digest'
+    + '/alerts \u2014 Advanced alerts \\(whale/price/fee\\)\n\n'
+    
+    
+    + '/portfolio \u2014 Multi-address portfolio\n'
+    + '/digest \u2014 Daily BTC digest \\(Pro\\)'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
@@ -841,13 +839,13 @@ function registerCommands(b: Bot): void {
       const max = MAX_PORTFOLIO;
       const count = await portfolioCount(userId);
       return ctx.reply(
-        '\\ud83d\\udcca *Portfolio Management*\\n\\n'
-        + '\\ud83d\\udccc ' + count + '/' + max + ' addresses\\n\\n'
-        + '*Commands:*\\n'
-        + '/portfolio add <address> <label> \\u2014 Add address\\n'
-        + '/portfolio list \\u2014 Show saved addresses\\n'
-        + '/portfolio remove <address> \\u2014 Remove address\\n'
-        + '/portfolio summary \\u2014 Aggregate stats\\n\\n'
+        '\ud83d\udcca *Portfolio Management*\n\n'
+        + '\ud83d\udccc ' + count + '/' + max + ' addresses\\n\\n'
+        + '*Commands:*\n'
+        + '/portfolio add <address> <label> \u2014 Add address\n'
+        + '/portfolio list \u2014 Show saved addresses\n'
+        + '/portfolio remove <address> \u2014 Remove address\n'
+        + '/portfolio summary \u2014 Aggregate stats\n\n'
         + '_Or pass a BTC address directly for single-address analysis_'
         + FOOTER,
         { parse_mode: 'MarkdownV2' }
@@ -1188,27 +1186,33 @@ function registerCommands(b: Bot): void {
   // ---- PREMIUM SUBSCRIPTION ----
 
   b.command('premium', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const userId = ctx.from?.id || 0;
+
     await ctx.reply(
-      '\\u2b50 *BTCFi — Everything is Free\\!*\n\n'
+      '\u2b50 *BTCFi \u2014 Everything is Free\!*\n\n'
       + 'All features are available to everyone:\\n\n'
-      + '\\u2022 Unlimited commands\\n'
-      + '\\u2022 Portfolio tracking \\\\(50 addresses\\\\)\\n'
-      + '\\u2022 Daily BTC digest\\n'
-      + '\\u2022 20 advanced alerts\\n'
-      + '\\u2022 Whale channel alerts\\n\n'
+      + '\u2022 Unlimited commands\\n'
+      + '\u2022 Portfolio tracking \\\\(50 addresses\\\\)\\n'
+      + '\u2022 Daily BTC digest\\n'
+      + '\u2022 20 advanced alerts\\n'
+      + '\u2022 Whale channel alerts\\n\n'
       + '_Direct API access (developers/AI agents) is paid via micropayments._'
       + FOOTER,
       { parse_mode: 'MarkdownV2' }
     );
   });
 
-  // ---- DIGEST ----
+  // ---- DIGEST (Pro only) ----
 
   b.command('digest', async (ctx) => {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
-      return ctx.reply('\\u23f0 Rate limit exceeded. Try again in a minute.');
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
     }
     const userId = ctx.from?.id || 0;
+    
     const sub = (ctx.match?.trim() || '').toLowerCase();
 
     // /digest enable or /digest disable
@@ -1216,8 +1220,8 @@ function registerCommands(b: Bot): void {
       const enabled = sub === 'enable';
       await setDigestEnabled(userId, enabled);
       return ctx.reply(
-        (enabled ? '\\u2705' : '\\u274c') + ' Daily digest ' + (enabled ? 'enabled' : 'disabled')
-        + ' \\\\(9am UTC\\\\)' + PLAIN_FOOTER
+        (enabled ? '\u2705' : '\u274c') + ' Daily digest ' + (enabled ? 'enabled' : 'disabled')
+        + ' \\(9am UTC\\)' + PLAIN_FOOTER
       );
     }
 
@@ -1237,8 +1241,8 @@ function registerCommands(b: Bot): void {
       const enabled = await isDigestEnabled(userId);
 
       await ctx.reply(
-        '\\ud83d\\udcca *24h BTC Digest*\\n\\n'
-        + '\\ud83d\\udc0b Whale transactions: ' + whaleCount + '\\n'
+        '\ud83d\udcca *24h BTC Digest*\n\n'
+        + '\ud83d\udc0b Whale transactions: ' + whaleCount + '\n'
         + '\ud83d\udcb5 BTC/USD: \\\\$' + esc(btcUsd) + '\n'
         + '\u26fd Fast fee: ' + (fees.fastestFee || '\u2014') + ' sat/vB\n'
         + '\u23f1 Medium fee: ' + (fees.halfHourFee || '\u2014') + ' sat/vB\n\n'
@@ -1364,6 +1368,7 @@ function registerCommands(b: Bot): void {
         else if (a.type === 'fee') desc = 'Fee ' + a.threshold + ' sat/vB';
         return '`' + esc(a.id) + '` \u2014 ' + esc(desc);
       });
+      
       const max = MAX_ALERTS;
       return ctx.reply(
         '\ud83d\udce1 *Your Alerts* \\\\( ' + alerts.length + '/' + max + ' \\\)\n\n'
@@ -1415,6 +1420,7 @@ function registerCommands(b: Bot): void {
     }
 
     // Default: show help
+    
     const max = MAX_ALERTS;
     const alerts = await getAlertList(userId);
     await ctx.reply(
