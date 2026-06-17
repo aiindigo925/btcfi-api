@@ -663,7 +663,6 @@ export async function GET(request: Request) {
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=3600',
-        'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
       },
     });
@@ -682,7 +681,6 @@ export async function GET(request: Request) {
   }, {
     headers: {
       'Cache-Control': 'public, s-maxage=3600',
-      'Access-Control-Allow-Origin': '*',
       'Content-Type': 'application/json',
     },
   });

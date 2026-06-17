@@ -8,7 +8,7 @@ export interface ToolDef {
   description: string;
   inputSchema: Record<string, unknown>;
   endpoint: string;
-  method: 'GET' | 'POST';
+  method: 'GET' | 'POST' | 'DELETE';
   buildUrl: (args: Record<string, unknown>) => string;
   buildBody?: (args: Record<string, unknown>) => string;
 }
@@ -96,7 +96,7 @@ export const TOOLS: ToolDef[] = [
   // Alert Rules
   { name: 'btcfi_create_alert', description: 'Create a smart alert rule. Supports threshold, compound, scheduled, and anomaly types. Delivered via webhook or Telegram DM.', inputSchema: { type: 'object', properties: { type: { type: 'string', enum: ['threshold', 'compound', 'scheduled', 'anomaly'], description: 'Rule type' }, metric: { type: 'string', enum: ['price', 'fees', 'whale_btc', 'whale_count', 'mvrv', 'sopr', 'mempool_size', 'block_time'], description: 'Metric to monitor' }, op: { type: 'string', enum: ['>', '<', '>=', '<=', '==', 'crosses_above', 'crosses_below'], description: 'Comparison operator' }, value: { type: 'number', description: 'Threshold value' }, delivery: { type: 'object', description: 'Delivery config: { type: "webhook", url, secret } or { type: "telegram", userId }' } }, required: ['type', 'metric', 'op', 'value', 'delivery'] }, endpoint: '/api/v1/alerts/rules', method: 'POST', buildUrl: () => '/api/v1/alerts/rules', buildBody: (a) => JSON.stringify({ type: a.type, metric: a.metric, op: a.op, value: a.value, delivery: a.delivery }) },
   { name: 'btcfi_list_alerts', description: 'List all alert rules for the authenticated API key.', inputSchema: { type: 'object', properties: {}, required: [] }, endpoint: '/api/v1/alerts/rules', method: 'GET', buildUrl: () => '/api/v1/alerts/rules' },
-  { name: 'btcfi_delete_alert', description: 'Delete an alert rule by ID.', inputSchema: { type: 'object', properties: { rule_id: { type: 'string', description: 'Alert rule ID to delete' } }, required: ['rule_id'] }, endpoint: '/api/v1/alerts/rules', method: 'GET', buildUrl: (a) => `/api/v1/alerts/rules/${a.rule_id}` },
+  { name: 'btcfi_delete_alert', description: 'Delete an alert rule by ID.', inputSchema: { type: 'object', properties: { rule_id: { type: 'string', description: 'Alert rule ID to delete' } }, required: ['rule_id'] }, endpoint: '/api/v1/alerts/rules', method: 'DELETE', buildUrl: (a) => `/api/v1/alerts/rules/${a.rule_id}` },
 ];
 
 /** Call a BTCFi API endpoint internally (server-side, no x402 needed) */

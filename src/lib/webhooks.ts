@@ -12,6 +12,30 @@
 
 import { createHmac, randomBytes } from 'crypto';
 import { getRedis } from './redis';
+
+// ============ SSRF PROTECTION ============
+
+/**
+ * Validate a webhook URL to prevent SSRF attacks.
+ * Blocks non-HTTPS, localhost, private IPs, and metadata endpoints.
+ */
+export function validateWebhookUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return { valid: false, error: 'Only HTTPS URLs allowed' };
+    const hostname = parsed.hostname;
+    // Block internal/private IPs
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1')
+      return { valid: false, error: 'Internal URLs not allowed' };
+    if (hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.'))
+      return { valid: false, error: 'Private IP ranges not allowed' };
+    if (hostname === '169.254.169.254')
+      return { valid: false, error: 'Metadata endpoint not allowed' };
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Invalid URL' };
+  }
+}
 import {
   getBtcPrice,
   getRecommendedFees,
@@ -77,6 +101,10 @@ export async function registerWebhook(
   apiKey: string,
   secret?: string,
 ): Promise<Webhook> {
+  const urlCheck = validateWebhookUrl(url);
+  if (!urlCheck.valid) {
+    throw new Error(`Invalid webhook URL: ${urlCheck.error}`);
+  }
   const redis = getRedis();
 
   const webhook: Webhook = {
@@ -184,6 +212,12 @@ export async function fireWebhook(
   const redis = getRedis();
   const MAX_ATTEMPTS = 3;
   const TIMEOUT_MS = 10_000;
+
+  // SSRF protection — validate URL before fetching
+  const urlCheck = validateWebhookUrl(webhook.url);
+  if (!urlCheck.valid) {
+    return { success: false, error: `SSRF blocked: ${urlCheck.error}` };
+  }
 
   const payload: WebhookPayload = {
     event,

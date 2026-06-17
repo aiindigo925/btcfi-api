@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { evaluateTriggers } from '@/lib/webhooks';
+import { validateApiKey } from '@/lib/api-keys';
 
 function getApiKey(request: NextRequest): string | null {
   return request.headers.get('X-API-Key') || request.headers.get('x-api-key');
@@ -57,6 +58,15 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
       { status: 401 },
     );
+  } else {
+    // Validate the API key
+    const validation = await validateApiKey(apiKey);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { success: false, error: validation.error || 'Invalid API key', code: 'INVALID_API_KEY' },
+        { status: 401 },
+      );
+    }
   }
 
   try {

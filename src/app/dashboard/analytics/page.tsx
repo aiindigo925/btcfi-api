@@ -19,7 +19,6 @@ interface ApiKeyData {
   key: {
     keyHash: string;
     keyPreview: string;
-    fullKey: string;
     tierInfo: { tier: string; label: string; dailyLimit: number | string; monthlyPrice: number };
     label: string;
     created: string;
@@ -165,8 +164,8 @@ export default function AnalyticsPage() {
   };
 
   const copyKey = async () => {
-    if (!data?.key?.fullKey) return;
-    await navigator.clipboard.writeText(data.key.fullKey);
+    if (!data?.key?.keyHash) return;
+    await navigator.clipboard.writeText(data?.key?.keyHash ?? '');
     setCopyToast(true);
     setTimeout(() => setCopyToast(false), 2000);
   };

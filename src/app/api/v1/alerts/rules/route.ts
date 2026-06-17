@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRule, listRules, getMaxRules } from '@/lib/alert-rules';
 import { validateApiKey, type ApiKeyTier } from '@/lib/api-keys';
+import { validateWebhookUrl } from '@/lib/webhooks';
 
 const VALID_METRICS = ['price', 'fees', 'whale_btc', 'whale_count', 'mvrv', 'sopr', 'mempool_size', 'block_time'];
 const VALID_OPS = ['>', '<', '>=', '<=', '==', 'crosses_above', 'crosses_below'];
@@ -178,6 +179,15 @@ export async function POST(request: NextRequest) {
       } catch {
         return NextResponse.json(
           { success: false, error: 'Invalid webhook URL format', code: 'INVALID_URL' },
+          { status: 400 }
+        );
+      }
+
+      // SSRF protection — reject private/internal/metadata URLs
+      const ssrfCheck = validateWebhookUrl(delivery.url);
+      if (!ssrfCheck.valid) {
+        return NextResponse.json(
+          { success: false, error: ssrfCheck.error, code: 'SSRF_BLOCKED' },
           { status: 400 }
         );
       }

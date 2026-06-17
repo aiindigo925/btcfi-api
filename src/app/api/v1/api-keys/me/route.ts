@@ -144,7 +144,6 @@ export async function GET(request: NextRequest) {
       key: {
         keyHash: info.keyHash,
         keyPreview: `${info.key.slice(0, 11)}...${info.key.slice(-4)}`,
-        fullKey: info.key,
         tierInfo: {
           tier: info.tier,
           label: tierConfig.label,

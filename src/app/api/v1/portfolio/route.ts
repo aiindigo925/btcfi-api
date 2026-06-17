@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createPortfolio } from '@/lib/portfolio-v2';
+import { isValidBitcoinAddress } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,15 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Maximum 100 addresses per portfolio', code: 'TOO_MANY_ADDRESSES' },
       { status: 400 },
     );
+  }
+
+  for (const addr of addresses) {
+    if (!isValidBitcoinAddress(addr)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid Bitcoin address: ${addr}`, code: 'INVALID_ADDRESS' },
+        { status: 400 },
+      );
+    }
   }
 
   try {

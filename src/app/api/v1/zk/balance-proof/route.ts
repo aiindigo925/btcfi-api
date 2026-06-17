@@ -43,8 +43,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error('POST /api/v1/zk/balance-proof failed:', error);
     return NextResponse.json({
-      success: false, error: error instanceof Error ? error.message : 'Proof generation failed', code: 'ZK_ERROR',
+      success: false, error: 'Proof generation failed', code: 'ZK_ERROR',
     }, { status: 500 });
   }
 }

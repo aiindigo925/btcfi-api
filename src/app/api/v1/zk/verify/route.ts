@@ -44,8 +44,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error('POST /api/v1/zk/verify failed:', error);
     return NextResponse.json({
-      success: false, error: error instanceof Error ? error.message : 'Verification failed', code: 'ZK_VERIFY_ERROR',
+      success: false, error: 'Verification failed', code: 'ZK_VERIFY_ERROR',
     }, { status: 500 });
   }
 }

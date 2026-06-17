@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { registerWebhook, listWebhooks, removeWebhook } from '@/lib/webhooks';
+import { registerWebhook, listWebhooks, removeWebhook, validateWebhookUrl } from '@/lib/webhooks';
 
 const VALID_TRIGGER_TYPES = ['whale', 'price_above', 'price_below', 'fee_spike', 'block_mined'];
 
@@ -73,6 +73,15 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { success: false, error: 'Invalid URL format', code: 'INVALID_URL_FORMAT' },
+        { status: 400 },
+      );
+    }
+
+    // SSRF protection — reject private/internal/metadata URLs
+    const ssrfCheck = validateWebhookUrl(url);
+    if (!ssrfCheck.valid) {
+      return NextResponse.json(
+        { success: false, error: ssrfCheck.error, code: 'SSRF_BLOCKED' },
         { status: 400 },
       );
     }

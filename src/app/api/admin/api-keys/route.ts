@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('GET /api/admin/api-keys failed:', error);
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Operation failed' },
       { status: 500 }
     );
   }
@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('POST /api/admin/api-keys failed:', error);
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Operation failed' },
       { status: 500 }
     );
   }
@@ -142,9 +142,9 @@ export async function DELETE(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('DELETE /api/admin/api-keys failed:', error);
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Operation failed' },
       { status: 500 }
     );
   }

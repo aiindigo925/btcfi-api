@@ -22,6 +22,10 @@ async function checkEndpoint(url: string, timeout = 5000): Promise<{ ok: boolean
 const CRON_SECRET = process.env.CRON_SECRET || '';
 
 export async function GET(request: Request) {
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'Cron secret not configured' }, { status: 503 });
+  }
+
   if (CRON_SECRET) {
     const auth = request.headers.get('authorization');
     if (auth !== `Bearer ${CRON_SECRET}`) {
