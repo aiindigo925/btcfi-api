@@ -358,6 +358,46 @@ function buildEntityDb(): Record<string, Omit<EntityInfo, 'address'>> {
 
 const ENTITY_DB = buildEntityDb();
 
+// ============ ENTITY CLUSTER HELPERS ============
+
+/** Build reverse index: entity name → address[] */
+function buildEntityIndex(): Record<string, { address: string; confidence: number; type: EntityInfo['type'] }[]> {
+  const index: Record<string, { address: string; confidence: number; type: EntityInfo['type'] }[]> = {};
+  const categories: [string, [string, string, number][]][] = [
+    ['exchange', EXCHANGES],
+    ['pool', POOLS],
+    ['corporate', CORPORATE],
+    ['etf', ETF],
+    ['government', GOVERNMENT],
+    ['mixer', MIXERS],
+    ['defi', DEFI],
+    ['gambling', GAMBLING],
+    ['scam', SCAM],
+  ];
+  for (const [type, entries] of categories) {
+    for (const [addr, entity, confidence] of entries) {
+      if (!index[entity]) index[entity] = [];
+      // Avoid duplicates within same entity
+      if (!index[entity].find(e => e.address === addr)) {
+        index[entity].push({ address: addr, confidence, type: type as EntityInfo['type'] });
+      }
+    }
+  }
+  return index;
+}
+
+const ENTITY_INDEX = buildEntityIndex();
+
+/** Get all addresses belonging to a named entity */
+export function getAddressesByEntity(entityName: string): { address: string; confidence: number; type: EntityInfo['type'] }[] {
+  return ENTITY_INDEX[entityName] || [];
+}
+
+/** Get all unique entity names */
+export function getAllEntityNames(): string[] {
+  return Object.keys(ENTITY_INDEX);
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function getEntityLabel(address: string): EntityInfo | null {

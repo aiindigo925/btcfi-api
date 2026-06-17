@@ -38,6 +38,8 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/intelligence/sopr': 0.02,
   '/api/v1/intelligence/nupl': 0.02,
   '/api/v1/intelligence/hodl-waves': 0.02,
+  '/api/v1/intelligence/cluster': 0.02,
+  '/api/v1/intelligence/graph': 0.02,
   // Ordinals/Lightning/L2 ($0.02)
   '/api/v1/ordinals': 0.02,
   '/api/v1/intelligence/lightning': 0.02,
@@ -78,6 +80,14 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/intelligence/history': 0.03,
   // Batch Queries ($0.01 base, per-item pricing applies)
   '/api/v1/batch': 0.01,
+  // Runes Protocol ($0.01)
+  '/api/v1/runes': 0.01,
+  // Taproot Assets ($0.02)
+  '/api/v1/taproot': 0.02,
+  // Lightning Insights ($0.02)
+  '/api/v1/lightning': 0.02,
+  // Portfolio V2 ($0.03 analytics, free create/read)
+  '/api/v1/portfolio': 0.03,
 };
 
 /**

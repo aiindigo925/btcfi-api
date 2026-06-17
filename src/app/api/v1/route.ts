@@ -57,6 +57,9 @@ export async function GET(request: NextRequest) {
         whales: { url: '/api/v1/intelligence/whales', method: 'GET', price: '$0.02', status: 'live' },
         risk: { url: '/api/v1/intelligence/risk/{addr}', method: 'GET', price: '$0.02', status: 'live' },
         network: { url: '/api/v1/intelligence/network', method: 'GET', price: '$0.02', status: 'live' },
+        cluster: { url: '/api/v1/intelligence/cluster/{addr}', method: 'GET', price: '$0.03', status: 'live' },
+        graph: { url: '/api/v1/intelligence/graph/{addr}', method: 'GET', price: '$0.03', status: 'live' },
+        graphSvg: { url: '/api/v1/intelligence/graph/{addr}/svg', method: 'GET', price: '$0.03', status: 'live' },
       },
       // ── MP1 Phase 8: Security ──
       security: {
@@ -95,6 +98,31 @@ export async function GET(request: NextRequest) {
       batch: {
         query: { url: '/api/v1/batch', method: 'POST', price: '$0.01 base', status: 'live', description: 'Parallel batch: balances ($0.01/ea), risk ($0.02/ea), entities ($0.05/ea)' },
       },
+      // ── Runes Protocol ──
+      runes: {
+        list: { url: '/api/v1/runes', method: 'GET', price: '$0.02', status: 'live', description: 'List all Runes tokens with pagination' },
+        detail: { url: '/api/v1/runes/{ticker}', method: 'GET', price: '$0.02', status: 'live', description: 'Detailed Rune info by ticker' },
+        holders: { url: '/api/v1/runes/{ticker}/holders', method: 'GET', price: '$0.02', status: 'live', description: 'Holder distribution for a Rune' },
+        transfers: { url: '/api/v1/runes/{ticker}/transfers', method: 'GET', price: '$0.02', status: 'live', description: 'Recent transfer activity' },
+        trending: { url: '/api/v1/runes/trending', method: 'GET', price: '$0.02', status: 'live', description: 'Top Runes by 24h activity' },
+      },
+      // ── Taproot Assets ──
+      taproot: {
+        assets: { url: '/api/v1/taproot/assets/{addr}', method: 'GET', price: '$0.02', status: 'live', description: 'Taproot Assets (TAP) held by address' },
+        assetInfo: { url: '/api/v1/taproot/assets/{addr}/{assetId}', method: 'GET', price: '$0.02', status: 'live', description: 'Detailed Taproot Asset info by asset ID' },
+      },
+      // ── Lightning Insights ──
+      lightning: {
+        node: { url: '/api/v1/lightning/node/{pubkey}', method: 'GET', price: '$0.02', status: 'live', description: 'Lightning node peers, capacity, routing fees' },
+        channel: { url: '/api/v1/lightning/channels/{chanId}', method: 'GET', price: '$0.02', status: 'live', description: 'Channel capacity, fee rates, uptime' },
+        routingFee: { url: '/api/v1/lightning/routing-fee?from={pubkey}&to={pubkey}&amount={sats}', method: 'GET', price: '$0.02', status: 'live', description: 'Estimate routing fee between nodes' },
+      },
+      // ── Portfolio V2 ──
+      portfolioV2: {
+        get: { url: '/api/v1/portfolio/{userId}', method: 'GET', price: 'free', status: 'live', description: 'Get saved multi-address portfolio' },
+        create: { url: '/api/v1/portfolio', method: 'POST', price: 'free', status: 'live', description: 'Create or update portfolio (body: { userId, addresses[] })' },
+        analytics: { url: '/api/v1/portfolio/{userId}/analytics', method: 'GET', price: '$0.03', status: 'live', description: 'Aggregate analytics across all portfolio addresses' },
+      },
     },
     x402: getX402Status(),
     security: {
@@ -121,7 +149,7 @@ export async function GET(request: NextRequest) {
     mcp: {
       package: '@aiindigo/btcfi-mcp',
       status: 'live',
-      tools: 27,
+      tools: 33,
       transport: 'stdio',
     },
     sdk: {

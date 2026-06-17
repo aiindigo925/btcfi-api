@@ -1,5 +1,26 @@
 # BTCFi API — Changelog
 
+## v4.1.0 (2026-06-17)
+
+**Address Cluster / Graph Analysis — heuristic-based address clustering.**
+
+### New Endpoints
+- `GET /api/v1/intelligence/cluster/{addr}` — Full cluster analysis with linked addresses, entity, risk score
+- `GET /api/v1/intelligence/graph/{addr}` — Connection graph (nodes + edges) up to N hops
+- `GET /api/v1/intelligence/graph/{addr}/svg` — SVG visualization of address graph
+
+### New Features
+- 4 clustering heuristics: Common Input Ownership, Optimal Change Detection, Entity Label, Temporal Proximity
+- Redis caching with 10-minute TTL for graph and cluster results
+- SVG graph renderer with concentric circle layout and color-coded edges
+- Entity cluster lookup by name
+
+### New MCP Tools
+- `btcfi_cluster_analysis` — Analyze address cluster using heuristic methods
+- `btcfi_address_graph` — Build connection graph up to N hops
+
+---
+
 ## v4.0.0 (2026-02-14)
 
 **Major release: Growth expansion — free viral tools, multi-chain, hosted MCP, wallet connect.**

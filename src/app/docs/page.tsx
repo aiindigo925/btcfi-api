@@ -34,10 +34,34 @@ export default function DocsPage() {
       {/* Quick nav */}
       <div style={css.nav}>
         <div style={{ color: '#666', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Contents</div>
-        {['Quick Start', 'Authentication', 'API Keys', 'x402 Payments', 'Core Endpoints', 'Batch Queries', 'Intelligence', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
+        {['Quick Start', 'Authentication', 'API Keys', 'x402 Payments', 'Core Endpoints', 'Batch Queries', 'Runes Protocol', 'Intelligence', 'Address Cluster & Graph', 'Smart Alerts', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
           <a key={s} href={`#${s.toLowerCase().replace(/ /g, '-')}`} style={css.navLink}>{s}</a>
         ))}
       </div>
+
+      {/* Address Cluster / Graph */}
+      <h2 style={css.h2} id="address-cluster">Address Cluster & Graph</h2>
+      <p style={css.p}>Heuristic-based address clustering and connection graph analysis. Links addresses using common input ownership, change detection, entity labels, and temporal proximity.</p>
+      <div style={css.code}>{`# Cluster analysis — find all linked addresses
+curl -H "X-Payment: <proof>" \\
+     https://btcfi.aiindigo.com/api/v1/intelligence/cluster/34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo
+
+# Connection graph (nodes + edges, up to N hops)
+curl -H "X-Payment: <proof>" \\
+     "https://btcfi.aiindigo.com/api/v1/intelligence/graph/34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo?depth=2"
+
+# SVG visualization of the graph
+curl -H "X-Payment: <proof>" \\
+     "https://btcfi.aiindigo.com/api/v1/intelligence/graph/34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo/svg"`}</div>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Method</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          <tr><td style={css.tdCode}>{'/api/v1/intelligence/cluster/{addr}'}</td><td style={css.td}>GET</td><td style={css.td}>$0.03</td><td style={css.td}>Full cluster analysis with linked addresses, entity, risk score</td></tr>
+          <tr><td style={css.tdCode}>{'/api/v1/intelligence/graph/{addr}'}</td><td style={css.td}>GET</td><td style={css.td}>$0.03</td><td style={css.td}>Connection graph data (nodes + edges). Query: ?depth=2</td></tr>
+          <tr><td style={css.tdCode}>{'/api/v1/intelligence/graph/{addr}/svg'}</td><td style={css.td}>GET</td><td style={css.td}>$0.03</td><td style={css.td}>SVG visualization of the address graph</td></tr>
+        </tbody>
+      </table>
+      <p style={css.p}><strong>Heuristics:</strong> Common Input Ownership (same tx inputs), Optimal Change Detection (output value analysis), Entity Label (same entity = same owner), Temporal Proximity (same block timing).</p>
 
       {/* Quick Start */}
       <h2 style={css.h2} id="quick-start">Quick Start</h2>
@@ -203,6 +227,49 @@ Content-Type: application/json
         </tbody>
       </table>
 
+      {/* Runes Protocol */}
+      <h2 style={css.h2} id="runes-protocol">Runes Protocol</h2>
+      <p style={css.p}>Deep analytics for Bitcoin Runes tokens — market data, holder distribution, transfers, and trending. All $0.01 USDC. Powered by Hiro API + Redis caching.</p>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          {[
+            ['GET /api/v1/runes', '$0.01', 'List all Runes tokens with pagination (?page=1&limit=20)'],
+            ['GET /api/v1/runes/{ticker}', '$0.01', 'Detailed Rune info — supply, holders, mint progress, market stats'],
+            ['GET /api/v1/runes/{ticker}/holders', '$0.01', 'Holder distribution with concentration metrics & Gini coefficient'],
+            ['GET /api/v1/runes/{ticker}/transfers', '$0.01', 'Recent transfer activity (?limit=20)'],
+            ['GET /api/v1/runes/trending', '$0.01', 'Top Runes by 24h activity & volume (?limit=10)'],
+          ].map(([ep, price, desc]) => (
+            <tr key={ep as string}><td style={css.tdCode}>{ep}</td><td style={css.td}>{price}</td><td style={css.td}>{desc}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={css.code}>{`// Example: Get detailed Rune info
+GET /api/v1/runes/DOG•GO•TO•THE•MOON
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "ticker": "DOG•GO•TO•THE•MOON",
+    "name": "DOGTOTHEMOON",
+    "runeid": "840000:3",
+    "total_supply": "100000000000",
+    "holders": 15420,
+    "market_cap_usd": 450000,
+    "volume_24h_usd": 12000,
+    "mint_progress": 1.0,
+    "mintable": false,
+    "symbol": "🐕"
+  }
+}
+
+// Example: Holder distribution
+GET /api/v1/runes/DOG•GO•TO•THE•MOON/holders
+
+// Response includes concentration metrics:
+// "concentration": { "top_10_percentage": 65.0, "gini_coefficient": 0.72 }`}</div>
+
       {/* Intelligence */}
       <h2 style={css.h2} id="intelligence">Intelligence</h2>
       <p style={css.p}>AI-powered analysis endpoints. All $0.02 USDC.</p>
@@ -220,6 +287,123 @@ Content-Type: application/json
           ))}
         </tbody>
       </table>
+
+      {/* Taproot Assets */}
+      <h2 style={css.h2} id="taproot-assets">Taproot Assets</h2>
+      <p style={css.p}>Track TAP (Taproot Assets Protocol) tokens held by Bitcoin addresses. Query asset balances, detailed asset info, and recent transfers.</p>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          {[
+            ['GET /api/v1/taproot/assets/{addr}', '$0.02', 'List all Taproot Assets held by address'],
+            ['GET /api/v1/taproot/assets/{addr}/{assetId}', '$0.02', 'Detailed asset info by asset ID'],
+          ].map(([ep, price, desc]) => (
+            <tr key={ep as string}><td style={css.tdCode}>{ep}</td><td style={css.td}>{price}</td><td style={css.td}>{desc}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Lightning Insights */}
+      <h2 style={css.h2} id="lightning-insights">Lightning Insights</h2>
+      <p style={css.p}>Deep analysis of Lightning Network nodes, channels, and routing. Powered by 1ML data.</p>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          {[
+            ['GET /api/v1/lightning/node/{pubkey}', '$0.02', 'Node info: peers, capacity, routing fees, uptime'],
+            ['GET /api/v1/lightning/channels/{chanId}', '$0.02', 'Channel capacity, fee rates, uptime estimate'],
+            ['GET /api/v1/lightning/routing-fee?from=&to=&amount=', '$0.02', 'Estimate routing fee between two nodes'],
+          ].map(([ep, price, desc]) => (
+            <tr key={ep as string}><td style={css.tdCode}>{ep}</td><td style={css.td}>{price}</td><td style={css.td}>{desc}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Portfolio V2 */}
+      <h2 style={css.h2} id="portfolio-v2">Portfolio V2</h2>
+      <p style={css.p}>Multi-address portfolio tracking with aggregate analytics. Save portfolios to Redis, analyze balance, risk, entity breakdown, and allocation across all addresses.</p>
+      <div style={css.code}>{`# Create a portfolio
+curl -X POST https://btcfi.aiindigo.com/api/v1/portfolio \\
+  -H "Content-Type: application/json" \\
+  -d '{"userId": "alice", "addresses": ["bc1q...", "3Kzh9q...", "1NDyJt..."]} '
+
+# Get portfolio
+curl https://btcfi.aiindigo.com/api/v1/portfolio/alice
+
+# Full analytics
+curl https://btcfi.aiindigo.com/api/v1/portfolio/alice/analytics`}</div>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Method</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          <tr><td style={css.tdCode}>{'/api/v1/portfolio/{userId}'}</td><td style={css.td}>GET</td><td style={css.td}>free</td><td style={css.td}>Get saved portfolio</td></tr>
+          <tr><td style={css.tdCode}>/api/v1/portfolio</td><td style={css.td}>POST</td><td style={css.td}>free</td><td style={css.td}>Create/update portfolio (body: userId + addresses[])</td></tr>
+          <tr><td style={css.tdCode}>{'/api/v1/portfolio/{userId}/analytics'}</td><td style={css.td}>GET</td><td style={css.td}>$0.03</td><td style={css.td}>Aggregate analytics: total balance, risk, age, entity breakdown, allocation</td></tr>
+        </tbody>
+      </table>
+
+      {/* Smart Alerts */}
+      <h2 style={css.h2} id="smart-alerts">Smart Alerts</h2>
+      <p style={css.p}>Flexible rule-based alerting system with support for threshold, compound, scheduled, and anomaly-detection rules. Delivered via webhook (HMAC-signed) or Telegram DM. $0.01 per triggered alert.</p>
+      <div style={css.code}>{`# Create a threshold alert (BTC price crosses $100k)
+curl -X POST https://btcfi.aiindigo.com/api/v1/alerts/rules \\
+  -H "X-API-Key: btcfi_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "type": "threshold",
+    "metric": "price",
+    "op": "crosses_above",
+    "value": 100000,
+    "delivery": {
+      "type": "webhook",
+      "url": "https://your-app.com/webhook",
+      "secret": "whsec_your_secret"
+    }
+  }'
+
+# Create an anomaly alert (fee z-score > 3.0)
+curl -X POST https://btcfi.aiindigo.com/api/v1/alerts/rules \\
+  -H "X-API-Key: btcfi_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "type": "anomaly",
+    "metric": "fees",
+    "op": ">",
+    "value": 0,
+    "zscore_threshold": 3.0,
+    "delivery": {
+      "type": "telegram",
+      "userId": "YOUR_TELEGRAM_CHAT_ID"
+    }
+  }'
+
+# List all alerts
+curl https://btcfi.aiindigo.com/api/v1/alerts/rules \\
+  -H "X-API-Key: btcfi_your_key"
+
+# Delete an alert
+curl -X DELETE https://btcfi.aiindigo.com/api/v1/alerts/rules/ar_123 \\
+  -H "X-API-Key: btcfi_your_key"
+
+# Manual evaluation trigger
+curl -X POST https://btcfi.aiindigo.com/api/v1/alerts/evaluate \\
+  -H "X-API-Key: btcfi_your_key"
+
+# Get alert history
+curl "https://btcfi.aiindigo.com/api/v1/alerts/history?limit=20" \\
+  -H "X-API-Key: btcfi_your_key"`}</div>
+      <p style={css.p}><strong>Rule Types:</strong> <code style={css.inline}>threshold</code> (single metric comparison), <code style={css.inline}>compound</code> (AND/OR logic across conditions), <code style={css.inline}>anomaly</code> (z-score based, tracks rolling average), <code style={css.inline}>scheduled</code> (cron-based periodic checks).</p>
+      <p style={css.p}><strong>Available Metrics:</strong> price (BTC/USD), fees (sat/vB), whale_btc (whale tx value), whale_count (whales/hour), mvrv (MVRV ratio), sopr (SOPR), mempool_size (MB), block_time (seconds).</p>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Endpoint</th><th style={css.th}>Method</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          <tr><td style={css.tdCode}>/api/v1/alerts/rules</td><td style={css.td}>GET</td><td style={css.td}>$0.01</td><td style={css.td}>List all alert rules</td></tr>
+          <tr><td style={css.tdCode}>/api/v1/alerts/rules</td><td style={css.td}>POST</td><td style={css.td}>$0.01</td><td style={css.td}>Create a new alert rule</td></tr>
+          <tr><td style={css.tdCode}>{'/api/v1/alerts/rules/{id}'}</td><td style={css.td}>DELETE</td><td style={css.td}>$0.01</td><td style={css.td}>Delete an alert rule</td></tr>
+          <tr><td style={css.tdCode}>/api/v1/alerts/evaluate</td><td style={css.td}>POST</td><td style={css.td}>$0.01</td><td style={css.td}>Manually trigger rule evaluation</td></tr>
+          <tr><td style={css.tdCode}>/api/v1/alerts/history</td><td style={css.td}>GET</td><td style={css.td}>$0.01</td><td style={css.td}>Get recent triggered alert events</td></tr>
+        </tbody>
+      </table>
+      <p style={css.p}><strong>Rule Limits:</strong> Free tier: 5 rules, Pro tier: 25 rules, Enterprise: 100 rules.</p>
 
       {/* Security */}
       <h2 style={css.h2} id="security">Security</h2>
@@ -306,7 +490,7 @@ const solPaid = new BTCFi({
 
       {/* MCP */}
       <h2 style={css.h2} id="mcp-server">MCP Server</h2>
-      <p style={css.p}>27-tool Model Context Protocol server for Claude Desktop, Cursor, and other MCP clients.</p>
+      <p style={css.p}>33-tool Model Context Protocol server for Claude Desktop, Cursor, and other MCP clients.</p>
       <div style={css.code}>{`// Claude Desktop config (~/.config/Claude/claude_desktop_config.json)
 {
   "mcpServers": {

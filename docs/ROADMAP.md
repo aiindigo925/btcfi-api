@@ -60,6 +60,7 @@
 - FutureTools AI badge on landing page
 - Hosted MCP server at `/api/mcp` (Streamable HTTP, zero-install)
 - Multi-chain: 3 Ethereum endpoints (gas, address, tx) + 2 Solana endpoints (fees, address)
+- Address Cluster / Graph Analysis: heuristic-based address clustering with 4 methods, connection graph with SVG visualization
 - Chrome extension scaffold (Manifest V3)
 - Telegram bot expanded to 15 commands
 
@@ -69,9 +70,9 @@
 
 | Metric | Count |
 |--------|-------|
-| API Endpoints | 33 (28 BTC + 3 ETH + 2 SOL) |
-| MCP Tools | 27 (hosted + stdio) |
-| SDK Methods | 28 |
+| API Endpoints | 36 (31 BTC + 3 ETH + 2 SOL) |
+| MCP Tools | 29 (hosted + stdio) |
+| SDK Methods | 30 |
 | YARA Patterns | 8 |
 | ZK Proof Types | 4 |
 | Payment Networks | 2 (Base + Solana) |
