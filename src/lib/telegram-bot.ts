@@ -1,10 +1,14 @@
 /**
  * BTCFi Telegram Bot — grammY
  *
- * Commands: /price, /fees, /mempool, /address, /tx, /whale, /risk, /network, /help
+ * Commands: /price, /fees, /mempool, /address, /tx, /whale, /risk, /network,
+ *           /mining, /lightning, /signal, /l2, /block, /mvrv, /sopr, /nupl,
+ *           /entity, /portfolio, /staking, /threat, /eth_addr, /sol_addr,
+ *           /watch, /unwatch, /watchlist, /alerts, /help
  * Inline mode: @BTC_Fi_Bot <address>
  * Channel posting: @BTCFi_Whales whale alerts with buy/sell signals (MP5 Phase 1)
  *
+ * Security: Redis-backed per-user rate limiting on all commands.
  * Lazy-initialized: grammY throws on empty token, so Bot is only
  * created when TELEGRAM_BOT_TOKEN is set and first update arrives.
  */
@@ -20,20 +24,20 @@ const WHALE_CHANNEL_ID = process.env.WHALE_CHANNEL_ID || '';
 
 // Footer for DM bot responses
 const FOOTER =
-  '\n\n\u2014\n' +
-  '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n' +
-  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
+  '\n\n\u2014\n'
+  + '_\ud83d\udca1 Full API:_ [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ `npm i @aiindigo/btcfi`\n'
+  + '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)';
 
 // Plain footer for non-markdown responses
 const PLAIN_FOOTER =
-  '\n\n—\n💡 btcfi.aiindigo.com | @BTC_Fi_Bot | @BTCFi_Whales\nAI Indigo | FutureTools AI | OpenClaw Terrace';
+  '\n\n\u2014\n\ud83d\udca1 btcfi.aiindigo.com | @BTC_Fi_Bot | @BTCFi_Whales\nAI Indigo | FutureTools AI | OpenClaw Terrace';
 
 // Footer for channel posts
 const CH_FOOTER =
-  '\n\n\u2014\n' +
-  '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n' +
-  '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)\n' +
-  '_Free for humans_';
+  '\n\n\u2014\n'
+  + '\ud83d\udd17 [btcfi\\.aiindigo\\.com](https://btcfi.aiindigo.com) _\\|_ [@BTC\\_Fi\\_Bot](https://t.me/BTC_Fi_Bot)\n'
+  + '[AI Indigo](https://aiindigo.com) _\\|_ [FutureTools AI](https://futuretoolsai.com) _\\|_ [OpenClaw Terrace](https://openclawterrace.com)\n'
+  + '_Free for humans_';
 
 // Lazy singleton
 let _bot: Bot | null = null;
@@ -57,6 +61,20 @@ async function getBot(): Promise<Bot> {
       { command: 'whale', description: 'Whale alert feed' },
       { command: 'risk', description: 'Risk analysis' },
       { command: 'network', description: 'Network health' },
+      { command: 'mining', description: 'Mining analytics' },
+      { command: 'lightning', description: 'Lightning Network stats' },
+      { command: 'signal', description: 'Composite buy/sell signal' },
+      { command: 'l2', description: 'Bitcoin L2 ecosystem' },
+      { command: 'block', description: 'Latest blocks' },
+      { command: 'mvrv', description: 'MVRV Z-Score' },
+      { command: 'sopr', description: 'SOPR metric' },
+      { command: 'nupl', description: 'Net Unrealized P/L' },
+      { command: 'entity', description: 'Entity cluster lookup' },
+      { command: 'portfolio', description: 'Portfolio analysis' },
+      { command: 'staking', description: 'Staking status' },
+      { command: 'threat', description: 'Security threat check' },
+      { command: 'eth_addr', description: 'ETH address lookup' },
+      { command: 'sol_addr', description: 'SOL address lookup' },
       { command: 'watch', description: 'Watch address' },
       { command: 'unwatch', description: 'Stop watching' },
       { command: 'watchlist', description: 'Your watched addresses' },
@@ -76,6 +94,31 @@ export const bot = {
   },
 };
 
+// ============ RATE LIMITING (Redis, per-user) ============
+
+const RATE_LIMIT_WINDOW = 60; // seconds
+const RATE_LIMIT_MAX = 15; // max commands per window per user
+
+/**
+ * Check per-user rate limit for bot commands.
+ * Returns true if allowed, false if rate limited.
+ * Fails open on Redis errors (allows request).
+ */
+async function checkCommandRateLimit(userId: number): Promise<boolean> {
+  try {
+    const redis = getRedis();
+    const key = `tg:cmd:${userId}`;
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, RATE_LIMIT_WINDOW);
+    }
+    return count <= RATE_LIMIT_MAX;
+  } catch {
+    // Fail open on Redis error
+    return true;
+  }
+}
+
 // ============ WHALE CHANNEL POSTING (MP5 Phase 1) ============
 
 export async function postWhaleToChannel(whale: {
@@ -90,56 +133,61 @@ export async function postWhaleToChannel(whale: {
   signalReason?: string;
 }): Promise<void> {
   if (!WHALE_CHANNEL_ID || !TOKEN) return;
-  const b = await getBot();
 
-  const btc = esc(whale.totalValueBtc);
-  const usd = esc(parseFloat(whale.totalValueUsd).toLocaleString());
-  const txShort = esc(whale.txid.slice(0, 16));
-  const fr = esc(whale.feeRate);
-  const sig = whale.signal || 'transfer';
+  try {
+    const b = await getBot();
 
-  // Scale emoji count by BTC value:
-  // 10-50 BTC = 1, 50-100 = 2, 100-250 = 3, 250-500 = 4, 500-1000 = 5,
-  // 1000-2500 = 6, 2500-5000 = 7, 5000-10000 = 8, 10000-25000 = 9, 25000+ = 10
-  const btcVal = parseFloat(whale.totalValueBtc) || 0;
-  const scale = btcVal >= 25000 ? 10 : btcVal >= 10000 ? 9 : btcVal >= 5000 ? 8
-    : btcVal >= 2500 ? 7 : btcVal >= 1000 ? 6 : btcVal >= 500 ? 5
-    : btcVal >= 250 ? 4 : btcVal >= 100 ? 3 : btcVal >= 50 ? 2 : 1;
+    const btc = esc(whale.totalValueBtc);
+    const usd = esc(parseFloat(whale.totalValueUsd).toLocaleString());
+    const txShort = esc(whale.txid.slice(0, 16));
+    const fr = esc(whale.feeRate);
+    const sig = whale.signal || 'transfer';
 
-  // Signal-based header with scaled emojis
-  let header: string;
-  if (sig === 'buy') {
-    const arrows = '\ud83d\udfe2'.repeat(scale);
-    header = arrows + ' *WHALE BUY* ' + arrows;
-  } else {
-    const arrows = '\ud83d\udd34'.repeat(scale);
-    header = arrows + ' *WHALE SELL* ' + arrows;
+    // Scale emoji count by BTC value:
+    // 10-50 BTC = 1, 50-100 = 2, 100-250 = 3, 250-500 = 4, 500-1000 = 5,
+    // 1000-2500 = 6, 2500-5000 = 7, 5000-10000 = 8, 10000-25000 = 9, 25000+ = 10
+    const btcVal = parseFloat(whale.totalValueBtc) || 0;
+    const scale = btcVal >= 25000 ? 10 : btcVal >= 10000 ? 9 : btcVal >= 5000 ? 8
+      : btcVal >= 2500 ? 7 : btcVal >= 1000 ? 6 : btcVal >= 500 ? 5
+      : btcVal >= 250 ? 4 : btcVal >= 100 ? 3 : btcVal >= 50 ? 2 : 1;
+
+    // Signal-based header with scaled emojis
+    let header: string;
+    if (sig === 'buy') {
+      const arrows = '\ud83d\udfe2'.repeat(scale);
+      header = arrows + ' *WHALE BUY* ' + arrows;
+    } else {
+      const arrows = '\ud83d\udd34'.repeat(scale);
+      header = arrows + ' *WHALE SELL* ' + arrows;
+    }
+
+    // Signal reason line
+    let signalLine = '';
+    if (sig !== 'transfer' && whale.signalReason) {
+      signalLine = '\ud83d\udcca _' + esc(whale.signalReason) + '_\n';
+    }
+
+    // I/O line (only if we have data)
+    let ioLine = '';
+    if (whale.inputs > 0 || whale.outputs > 0) {
+      ioLine = '\ud83d\udce5 Inputs: ' + whale.inputs + ' \u00b7 \ud83d\udce4 Outputs: ' + whale.outputs + '\n';
+    }
+
+    const msg = header + '\n\n'
+      + '\ud83d\udcb0 ' + btc + ' BTC \\(\\$' + usd + '\\)\n'
+      + '\ud83d\udcc4 TX: `' + txShort + '\\.\\.\\.`' + '`\n'
+      + '\u26fd Fee: ' + fr + '\n'
+      + ioLine
+      + signalLine
+      + CH_FOOTER;
+
+    await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
+      parse_mode: 'MarkdownV2',
+      link_preview_options: { is_disabled: true },
+    });
+  } catch (err) {
+    console.error('[Telegram] postWhaleToChannel failed:', err);
   }
-
-  // Signal reason line
-  let signalLine = '';
-  if (sig !== 'transfer' && whale.signalReason) {
-    signalLine = '\ud83d\udcca _' + esc(whale.signalReason) + '_\n';
-  }
-
-  // I/O line (only if we have data)
-  let ioLine = '';
-  if (whale.inputs > 0 || whale.outputs > 0) {
-    ioLine = '\ud83d\udce5 Inputs: ' + whale.inputs + ' \u00b7 \ud83d\udce4 Outputs: ' + whale.outputs + '\n';
-  }
-
-  const msg = header + '\n\n'
-    + '\ud83d\udcb0 ' + btc + ' BTC \\(\\$' + usd + '\\)\n'
-    + '\ud83d\udcc4 TX: `' + txShort + '\\.\\.\\.' + '`\n'
-    + '\u26fd Fee: ' + fr + '\n'
-    + ioLine
-    + signalLine
-    + CH_FOOTER;
-
-  await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
-    parse_mode: 'MarkdownV2',
-    link_preview_options: { is_disabled: true },
-  });
 }
 
 // ============ HELPERS ============
@@ -167,6 +215,10 @@ function looksLikeTxid(s: string): boolean {
   return /^[a-fA-F0-9]{64}$/.test(s);
 }
 
+function maxLen(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n) : s;
+}
+
 // ============ COMMAND REGISTRATION ============
 
 function registerCommands(b: Bot): void {
@@ -180,6 +232,13 @@ function registerCommands(b: Bot): void {
     + '/whale \u2014 Recent whale movements\n'
     + '/risk \u2014 Address risk score\n'
     + '/network \u2014 Network health\n'
+    + '/mining \u2014 Mining analytics\n'
+    + '/lightning \u2014 Lightning Network\n'
+    + '/signal \u2014 Cycle signal\n'
+    + '/l2 \u2014 Bitcoin L2 ecosystem\n'
+    + '/block \u2014 Latest blocks\n'
+    + '/entity \u2014 Entity cluster\n'
+    + '/portfolio \u2014 Portfolio analysis\n'
     + '/watch \u2014 Watch an address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
@@ -191,14 +250,33 @@ function registerCommands(b: Bot): void {
 
   b.command('help', (ctx) => ctx.reply(
     '\u20bf *BTCFi Commands*\n\n'
+    + '*Price & Fees*\n'
     + '/price \u2014 Live BTC price\n'
-    + '/fees \u2014 Fee recommendations\n'
+    + '/fees \u2014 Fee recommendations\n\n'
+    + '*Blockchain*\n'
     + '/mempool \u2014 Mempool summary\n'
     + '/address \u2014 Balance & stats\n'
     + '/tx \u2014 TX details\n'
+    + '/block \u2014 Latest blocks\n\n'
+    + '*Intelligence*\n'
     + '/whale \u2014 Whale alert feed\n'
     + '/risk \u2014 Risk analysis\n'
     + '/network \u2014 Network health\n'
+    + '/mining \u2014 Mining analytics\n'
+    + '/lightning \u2014 Lightning Network\n'
+    + '/signal \u2014 Composite cycle signal\n'
+    + '/l2 \u2014 Bitcoin L2 ecosystem\n'
+    + '/entity \u2014 Entity cluster lookup\n'
+    + '/portfolio \u2014 Portfolio analysis\n\n'
+    + '*On-Chain Metrics*\n'
+    + '/mvrv \u2014 MVRV Z-Score\n'
+    + '/sopr \u2014 SOPR metric\n'
+    + '/nupl \u2014 Net Unrealized P/L\n\n'
+    + '*Multi-Chain*\n'
+    + '/eth_addr \u2014 ETH address lookup\n'
+    + '/sol_addr \u2014 SOL address lookup\n'
+    + '/staking \u2014 Staking status\n\n'
+    + '*Watchlist*\n'
     + '/watch \u2014 Watch address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
@@ -207,22 +285,34 @@ function registerCommands(b: Bot): void {
     { parse_mode: 'MarkdownV2' }
   ));
 
+  // ---- PRICE & FEES ----
+
   b.command('price', async (ctx) => {
+    // Rate limit check
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
-      const data = await api('/api/v1/fees');
-      const p = data.price || {};
-      const usd = esc(Math.round(p.btcUsd || 0).toLocaleString());
-      const eur = esc(Math.round(p.btcEur || 0).toLocaleString());
+      const data = await api('/api/v1/price');
+      const p = data.data?.btc || data.price || {};
+      const usd = esc(Math.round(p.usd || p.btcUsd || 0).toLocaleString());
+      const eur = esc(Math.round(p.eur || p.btcEur || 0).toLocaleString());
       await ctx.reply(
         '\u20bf *Bitcoin Price*\n\n'
         + '\ud83d\udcb5 USD: \\$' + usd + '\n'
         + '\ud83d\udcb6 EUR: \u20ac' + eur + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch price'); }
+    } catch (err) {
+      console.error('[Telegram] /price failed:', err);
+      await ctx.reply('\u274c Failed to fetch price');
+    }
   });
 
   b.command('fees', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/fees');
       const r = data.fees?.recommended || {};
@@ -238,10 +328,18 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udccf Economy: ' + (r.economyFee || '\u2014') + ' sat/vB' + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch fees'); }
+    } catch (err) {
+      console.error('[Telegram] /fees failed:', err);
+      await ctx.reply('\u274c Failed to fetch fees');
+    }
   });
 
+  // ---- BLOCKCHAIN ----
+
   b.command('mempool', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/mempool');
       const m = data.mempool || {};
@@ -252,10 +350,16 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb0 Total fees: ' + esc(m.totalFeeBTC || '\u2014') + ' BTC' + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch mempool'); }
+    } catch (err) {
+      console.error('[Telegram] /mempool failed:', err);
+      await ctx.reply('\u274c Failed to fetch mempool');
+    }
   });
 
   b.command('address', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const addr = ctx.match?.trim();
     if (!addr || !looksLikeBtcAddress(addr)) {
       return ctx.reply('Usage: /address <bitcoin_address>\nExample: /address bc1q...');
@@ -272,10 +376,16 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udce5 Funded: ' + (s.fundedTxos || 0) + ' \u00b7 \ud83d\udce4 Spent: ' + (s.spentTxos || 0) + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Address not found or invalid'); }
+    } catch (err) {
+      console.error('[Telegram] /address failed:', err);
+      await ctx.reply('\u274c Address not found or invalid');
+    }
   });
 
   b.command('tx', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const txid = ctx.match?.trim();
     if (!txid || !looksLikeTxid(txid)) {
       return ctx.reply('Usage: /tx <transaction_id>\n(64 hex characters)');
@@ -294,10 +404,42 @@ function registerCommands(b: Bot): void {
         + '\u2696\ufe0f Weight: ' + (tx.weight || '\u2014') + '\n'
         + '\ud83d\udcb0 Fee: ' + esc(tx.fee?.sats ? tx.fee.sats + ' sats (' + (tx.fee.rate || '\u2014') + ')' : '\u2014') + FOOTER;
       await ctx.reply(msg, { parse_mode: 'MarkdownV2' });
-    } catch { await ctx.reply('\u274c Transaction not found'); }
+    } catch (err) {
+      console.error('[Telegram] /tx failed:', err);
+      await ctx.reply('\u274c Transaction not found');
+    }
   });
 
+  b.command('block', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/block/latest');
+      const blocks = (data.blocks || []).slice(0, 5);
+      if (!blocks.length) return ctx.reply('\u274c No blocks available');
+      const lines = blocks.map((bl: any) => {
+        const time = new Date(bl.time || bl.timestamp * 1000);
+        const ago = Math.round((Date.now() - time.getTime()) / 60000);
+        return '\ud83d\udce6 #' + bl.height + ' \u2014 ' + bl.txCount + ' txs \u2014 ' + ago + 'm ago';
+      });
+      await ctx.reply(
+        '\ud83d\udce6 *Latest Blocks*\n\n'
+        + lines.join('\n') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /block failed:', err);
+      await ctx.reply('\u274c Failed to fetch blocks');
+    }
+  });
+
+  // ---- INTELLIGENCE ----
+
   b.command('whale', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/intelligence/whales');
       const whales = data.data?.transactions || [];
@@ -307,10 +449,16 @@ function registerCommands(b: Bot): void {
         return sigEmoji + ' ' + esc(w.totalValueBtc || '?') + ' BTC \u2014 `' + esc((w.txid || '').slice(0, 12)) + '\\.\\.\\.' + '`';
       });
       await ctx.reply('\ud83d\udc0b *Recent Whales*\n\n' + lines.join('\n') + FOOTER, { parse_mode: 'MarkdownV2' });
-    } catch { await ctx.reply('\u274c Failed to fetch whale data'); }
+    } catch (err) {
+      console.error('[Telegram] /whale failed:', err);
+      await ctx.reply('\u274c Failed to fetch whale data');
+    }
   });
 
   b.command('risk', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const addr = ctx.match?.trim();
     if (!addr || !looksLikeBtcAddress(addr)) {
       return ctx.reply('Usage: /risk <bitcoin_address>');
@@ -330,10 +478,16 @@ function registerCommands(b: Bot): void {
         + esc(d.summary || '') + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Risk analysis failed'); }
+    } catch (err) {
+      console.error('[Telegram] /risk failed:', err);
+      await ctx.reply('\u274c Risk analysis failed');
+    }
   });
 
   b.command('network', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/intelligence/network');
       const d = data.data || {};
@@ -351,12 +505,357 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb5 BTC: \\$' + price + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Network health unavailable'); }
+    } catch (err) {
+      console.error('[Telegram] /network failed:', err);
+      await ctx.reply('\u274c Network health unavailable');
+    }
   });
 
-  // ============ MULTI-CHAIN COMMANDS (MP5 Phase 8) ============
+  b.command('mining', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/mining');
+      const d = data.data || {};
+      const h = d.hashrate || {};
+      const diff = d.difficulty || {};
+      const bs = d.blockStats || {};
+      const pools = (d.poolDistribution || []).slice(0, 5).map((p: any) =>
+        '  ' + esc(p.name) + ': ' + p.sharePercent + '%'
+      );
+      await ctx.reply(
+        '\u26cf\ufe0f *Mining Analytics*\n\n'
+        + '\u26a1 Hashrate: ' + esc(h.hashrate || '\u2014') + '\n'
+        + '\ud83d\udd22 Difficulty: ' + esc(diff.adjusted || '\u2014') + '\n'
+        + '\ud83d\udce6 Blocks 24h: ' + (bs.blocksLast24h || '\u2014') + '\n'
+        + '\u23f1 Avg block: ' + esc(bs.avgBlockTime || '\u2014') + '\n\n'
+        + '*Top Pools:*\n'
+        + (pools.length ? pools.join('\n') : '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /mining failed:', err);
+      await ctx.reply('\u274c Mining analytics unavailable');
+    }
+  });
+
+  b.command('lightning', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/lightning');
+      const d = data.data || {};
+      const topNodes = (d.topNodes || []).slice(0, 5).map((n: any) =>
+        '  ' + esc(n.alias) + ': ' + n.capacity.toLocaleString() + ' sats'
+      );
+      await ctx.reply(
+        '\u26a1 *Lightning Network*\n\n'
+        + '\ud83c\udfe1 Capacity: ' + esc((d.totalCapacity || 0).toLocaleString()) + ' sats\n'
+        + '\ud83d\udd17 Channels: ' + esc((d.channelCount || 0).toLocaleString()) + '\n'
+        + '\ud83d\udcaa Avg channel: ' + esc((d.avgChannelSize || 0).toLocaleString()) + ' sats\n\n'
+        + '*Top Nodes:*\n'
+        + (topNodes.length ? topNodes.join('\n') : '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /lightning failed:', err);
+      await ctx.reply('\u274c Lightning data unavailable');
+    }
+  });
+
+  b.command('signal', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/signal');
+      const d = data.data || {};
+      const sig = d.signal || 'neutral';
+      const confidence = d.confidence || 0;
+      const score = d.score || 0;
+      const sigEmoji = sig.includes('buy') ? '\ud83d\udfe2' : sig.includes('sell') ? '\ud83d\udd34' : '\ud83d\udfe0';
+      const sigLabel = sig.replace(/_/g, ' ').toUpperCase();
+      const bar = '\u2588'.repeat(Math.round(Math.abs(score) * 10)) + '\u2591'.repeat(10 - Math.round(Math.abs(score) * 10));
+      const components = (d.components || []).map((c: any) =>
+        '  ' + (c.score > 0.2 ? '\ud83d\udfe2' : c.score < -0.2 ? '\ud83d\udd34' : '\ud83d\udfe0') + ' ' + esc(c.name) + ': ' + c.score.toFixed(2)
+      );
+      await ctx.reply(
+        sigEmoji + ' *Cycle Signal: ' + sigLabel + '*\n\n'
+        + 'Confidence: ' + confidence + '%\n'
+        + 'Score: ' + score.toFixed(3) + ' ' + bar + '\n\n'
+        + '*Components:*\n'
+        + (components.length ? components.join('\n') : '\u2014') + '\n\n'
+        + '_' + esc(d.reasoning || '') + '_' + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /signal failed:', err);
+      await ctx.reply('\u274c Signal data unavailable');
+    }
+  });
+
+  b.command('l2', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/l2');
+      const d = data.data || {};
+      const chains = (d.chains || []).slice(0, 6).map((c: any) => {
+        const arrow = c.change24h >= 0 ? '\ud83d\udcc8' : '\ud83d\udcc9';
+        return '  ' + esc(c.name) + ': $' + esc((c.tvl / 1e6).toFixed(1)) + 'M ' + arrow + ' ' + c.change24h.toFixed(1) + '%';
+      });
+      await ctx.reply(
+        '\u26c1\ufe0f *Bitcoin L2 Ecosystem*\n\n'
+        + '\ud83d\udcb0 Total TVL: $' + esc(((d.totalTVL || 0) / 1e6).toFixed(1)) + 'M\n\n'
+        + '*Chains:*\n'
+        + (chains.length ? chains.join('\n') : '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /l2 failed:', err);
+      await ctx.reply('\u274c L2 data unavailable');
+    }
+  });
+
+  b.command('entity', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const addr = ctx.match?.trim();
+    if (!addr || !looksLikeBtcAddress(addr)) {
+      return ctx.reply('Usage: /entity <bitcoin_address>');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/entity/' + encodeURIComponent(addr));
+      const d = data.data || {};
+      const tags = (d.tags || []).map((t: string) => '#' + esc(t)).join(' ');
+      await ctx.reply(
+        '\ud83c\udfe2 *Entity Lookup*\n\n'
+        + '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + '`\n\n'
+        + 'Entity: ' + esc(d.entity || 'Unknown') + '\n'
+        + 'Type: ' + esc(d.entityType || '\u2014') + '\n'
+        + (tags ? 'Tags: ' + tags + '\n' : '')
+        + '\ud83d\udcb0 Balance: ' + esc(d.balance?.btc || '0') + ' BTC\n'
+        + '\ud83d\udcca Transactions: ' + (d.txCount || 0) + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /entity failed:', err);
+      await ctx.reply('\u274c Entity lookup failed');
+    }
+  });
+
+  b.command('portfolio', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const addr = ctx.match?.trim();
+    if (!addr || !looksLikeBtcAddress(addr)) {
+      return ctx.reply('Usage: /portfolio <bitcoin_address>');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/portfolio/' + encodeURIComponent(addr));
+      const d = data.data || {};
+      const assets = (d.assets || []).slice(0, 5).map((a: any) =>
+        '  ' + esc(a.name || a.symbol || '?') + ': $' + esc((a.valueUsd || 0).toLocaleString())
+      );
+      await ctx.reply(
+        '\ud83d\udcca *Portfolio*\n\n'
+        + '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + '`\n\n'
+        + '\ud83d\udcb0 Total: $' + esc((d.totalValueUsd || 0).toLocaleString()) + '\n'
+        + '\ud83d\udcc4 BTC: ' + esc(d.totalBtc || '0') + '\n\n'
+        + '*Assets:*\n'
+        + (assets.length ? assets.join('\n') : '\u2014') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /portfolio failed:', err);
+      await ctx.reply('\u274c Portfolio lookup failed');
+    }
+  });
+
+  // ---- ON-CHAIN METRICS ----
+
+  b.command('mvrv', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/mvrv');
+      const d = data.data || {};
+      const zscore = d.zscore ?? '\u2014';
+      const mvrv = d.mvrv ?? '\u2014';
+      const zone = d.zone || '\u2014';
+      await ctx.reply(
+        '\ud83d\udcc8 *MVRV Z-Score*\n\n'
+        + 'Z-Score: ' + esc(String(zscore)) + '\n'
+        + 'MVRV Ratio: ' + esc(String(mvrv)) + '\n'
+        + 'Zone: ' + esc(zone) + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /mvrv failed:', err);
+      await ctx.reply('\u274c MVRV data unavailable');
+    }
+  });
+
+  b.command('sopr', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/sopr');
+      const d = data.data || {};
+      const sopr = d.sopr ?? '\u2014';
+      const window = d.window || '\u2014';
+      const emoji = typeof sopr === 'number' ? (sopr < 1 ? '\ud83d\udfe2' : sopr > 1.15 ? '\ud83d\udd34' : '\ud83d\udfe0') : '';
+      await ctx.reply(
+        emoji + ' *SOPR*\n\n'
+        + 'Value: ' + esc(String(sopr)) + '\n'
+        + 'Window: ' + esc(window) + '\n\n'
+        + '< 1 = loss selling \\(buy signal\\)\n'
+        + '> 1\\.15 = profit taking \\(sell signal\\)' + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /sopr failed:', err);
+      await ctx.reply('\u274c SOPR data unavailable');
+    }
+  });
+
+  b.command('nupl', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/intelligence/nupl');
+      const d = data.data || {};
+      const nupl = d.nupl ?? '\u2014';
+      const zone = d.zone || '\u2014';
+      const emoji = typeof nupl === 'number' ? (nupl < 0.25 ? '\ud83d\udfe2' : nupl > 0.75 ? '\ud83d\udd34' : '\ud83d\udfe0') : '';
+      await ctx.reply(
+        emoji + ' *Net Unrealized P/L*\n\n'
+        + 'NUPL: ' + esc(String(nupl)) + '\n'
+        + 'Zone: ' + esc(zone) + '\n\n'
+        + '< 0\\.25 = capitulation \\(buy\\)\n'
+        + '> 0\\.75 = euphoria \\(sell\\)' + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /nupl failed:', err);
+      await ctx.reply('\u274c NUPL data unavailable');
+    }
+  });
+
+  // ---- MULTI-CHAIN ----
+
+  b.command('eth_addr', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const addr = ctx.match?.trim();
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+      return ctx.reply('Usage: /eth_addr <0x... address>');
+    }
+    try {
+      const data = await api('/api/v1/eth/address/' + encodeURIComponent(addr));
+      const d = data.data || data.balance || {};
+      await ctx.reply(
+        '\u26a1 *ETH Address*\n\n'
+        + '`' + esc(addr.slice(0, 10)) + '\\.\\.\\.' + esc(addr.slice(-8)) + '`\n\n'
+        + '\ud83d\udcb0 Balance: ' + esc(d.balance || d.eth || '0') + ' ETH\n'
+        + '\ud83d\udcb5 USD: \\$' + esc(d.usd || '0') + '\n'
+        + '\ud83d\udcca Transactions: ' + (d.txCount || d.nonce || 0) + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /eth_addr failed:', err);
+      await ctx.reply('\u274c ETH address lookup failed');
+    }
+  });
+
+  b.command('sol_addr', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const addr = ctx.match?.trim();
+    if (!addr || addr.length < 32 || addr.length > 44) {
+      return ctx.reply('Usage: /sol_addr <Solana address>');
+    }
+    try {
+      const data = await api('/api/v1/sol/address/' + encodeURIComponent(addr));
+      const d = data.data || {};
+      await ctx.reply(
+        '\u26a1 *SOL Address*\n\n'
+        + '`' + esc(addr.slice(0, 8)) + '\\.\\.\\.' + esc(addr.slice(-8)) + '`\n\n'
+        + '\ud83d\udcb0 SOL: ' + esc(d.sol || d.balance || '0') + '\n'
+        + '\ud83d\udcb5 USD: \\$' + esc(d.usd || '0') + '\n'
+        + '\ud83d\udcca Transactions: ' + (d.txCount || 0) + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /sol_addr failed:', err);
+      await ctx.reply('\u274c SOL address lookup failed');
+    }
+  });
+
+  b.command('staking', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    try {
+      const data = await api('/api/v1/staking/status');
+      const d = data.data || data;
+      await ctx.reply(
+        '\ud83d\udcb0 *Staking Status*\n\n'
+        + esc(d.status || '\u2014') + '\n'
+        + (d.apy ? 'APY: ' + esc(String(d.apy)) + '%\n' : '')
+        + (d.tvl ? 'TVL: $' + esc(d.tvl) + '\n' : '')
+        + (d.detail ? '\n' + esc(d.detail) : '') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /staking failed:', err);
+      await ctx.reply('\u274c Staking data unavailable');
+    }
+  });
+
+  b.command('threat', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const addr = ctx.match?.trim();
+    if (!addr || !looksLikeBtcAddress(addr)) {
+      return ctx.reply('Usage: /threat <bitcoin_address>');
+    }
+    try {
+      const data = await api('/api/v1/security/threat/' + encodeURIComponent(addr));
+      const d = data.data || {};
+      const level = d.threatLevel || d.level || 'unknown';
+      const emoji = level === 'low' ? '\ud83d\udfe2' : level === 'medium' ? '\ud83d\udfe1' : level === 'high' ? '\ud83d\udd34' : '\ud83d\udfe0';
+      await ctx.reply(
+        emoji + ' *Security Threat*\n\n'
+        + '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + '`\n\n'
+        + 'Level: ' + esc(String(level).toUpperCase()) + '\n'
+        + (d.indicators ? 'Indicators: ' + esc(d.indicators) + '\n' : '')
+        + (d.recommendation ? '\n' + esc(d.recommendation) : '') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /threat failed:', err);
+      await ctx.reply('\u274c Threat analysis failed');
+    }
+  });
+
+  // ---- LEGACY MULTI-CHAIN ----
 
   b.command('eth_gas', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/eth/gas');
       const d = data.data || {};
@@ -369,10 +868,16 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udce6 Block: ' + (d.blockNumber || '\u2014') + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch ETH gas'); }
+    } catch (err) {
+      console.error('[Telegram] /eth_gas failed:', err);
+      await ctx.reply('\u274c Failed to fetch ETH gas');
+    }
   });
 
   b.command('sol_fees', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const data = await api('/api/v1/sol/fees');
       const d = data.data || {};
@@ -386,12 +891,18 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udce6 Slot: ' + (d.slot || '\u2014') + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch SOL fees'); }
+    } catch (err) {
+      console.error('[Telegram] /sol_fees failed:', err);
+      await ctx.reply('\u274c Failed to fetch SOL fees');
+    }
   });
 
-  // ============ WATCHLIST COMMANDS (MP5 Phase 5) ============
+  // ---- WATCHLIST COMMANDS (MP5 Phase 5) ----
 
   b.command('watch', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const addr = ctx.match?.trim();
     if (!addr || !looksLikeBtcAddress(addr)) {
       return ctx.reply('Usage: /watch <bitcoin_address>');
@@ -400,10 +911,16 @@ function registerCommands(b: Bot): void {
       const chatId = String(ctx.chat.id);
       const result = await addWatch(chatId, addr);
       await ctx.reply((result.ok ? '\u2705 ' + result.message : '\u274c ' + result.message) + PLAIN_FOOTER);
-    } catch { await ctx.reply('\u274c Failed to add watch'); }
+    } catch (err) {
+      console.error('[Telegram] /watch failed:', err);
+      await ctx.reply('\u274c Failed to add watch');
+    }
   });
 
   b.command('unwatch', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const addr = ctx.match?.trim();
     if (!addr || !looksLikeBtcAddress(addr)) {
       return ctx.reply('Usage: /unwatch <bitcoin_address>');
@@ -412,10 +929,16 @@ function registerCommands(b: Bot): void {
       const chatId = String(ctx.chat.id);
       const result = await removeWatch(chatId, addr);
       await ctx.reply('\u2705 ' + result.message + PLAIN_FOOTER);
-    } catch { await ctx.reply('\u274c Failed to remove watch'); }
+    } catch (err) {
+      console.error('[Telegram] /unwatch failed:', err);
+      await ctx.reply('\u274c Failed to remove watch');
+    }
   });
 
   b.command('watchlist', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     try {
       const chatId = String(ctx.chat.id);
       const addresses = await getWatchlist(chatId);
@@ -423,7 +946,7 @@ function registerCommands(b: Bot): void {
         return ctx.reply('\ud83d\udccd No watched addresses\\. Use /watch to add one\\.', { parse_mode: 'MarkdownV2' });
       }
       const alertsOn = await getAlerts(chatId);
-      const lines = addresses.map((a, i) => `${i + 1}\\. \`${esc(a.slice(0, 16))}\\.\\.\\.\``);
+      const lines = addresses.map((a, i) => i + 1 + '\\. \\`' + esc(a.slice(0, 16)) + '\\.\\.\\.\\`');
       await ctx.reply(
         '\ud83d\udccd *Your Watchlist* \\(' + addresses.length + '/5\\)\n\n'
         + lines.join('\n') + '\n\n'
@@ -431,10 +954,16 @@ function registerCommands(b: Bot): void {
         + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch { await ctx.reply('\u274c Failed to fetch watchlist'); }
+    } catch (err) {
+      console.error('[Telegram] /watchlist failed:', err);
+      await ctx.reply('\u274c Failed to fetch watchlist');
+    }
   });
 
   b.command('alerts', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
     const arg = ctx.match?.trim().toLowerCase();
     if (arg !== 'on' && arg !== 'off') {
       return ctx.reply('Usage: /alerts on  or  /alerts off');
@@ -442,9 +971,14 @@ function registerCommands(b: Bot): void {
     try {
       const chatId = String(ctx.chat.id);
       await setAlerts(chatId, arg === 'on');
-      await ctx.reply((arg === 'on' ? '\u2705 Alerts enabled — you\'ll get DMs when watched balances change' : '\u274c Alerts disabled') + PLAIN_FOOTER);
-    } catch { await ctx.reply('\u274c Failed to update alerts'); }
+      await ctx.reply((arg === 'on' ? '\u2705 Alerts enabled \u2014 you\'ll get DMs when watched balances change' : '\u274c Alerts disabled') + PLAIN_FOOTER);
+    } catch (err) {
+      console.error('[Telegram] /alerts failed:', err);
+      await ctx.reply('\u274c Failed to update alerts');
+    }
   });
+
+  // ---- INLINE QUERY ----
 
   b.on('inline_query', async (ctx) => {
     // Rate limit: 10 inline queries per minute per user
@@ -473,6 +1007,9 @@ function registerCommands(b: Bot): void {
             + '\n\n\ud83d\udca1 btcfi.aiindigo.com | aiindigo.com | futuretoolsai.com | openclawterrace.com',
         },
       }]);
-    } catch { /* ignore inline failures */ }
+    } catch {
+      console.error('[Telegram] Inline query failed');
+      /* ignore inline failures */
+    }
   });
 }
