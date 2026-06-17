@@ -115,6 +115,7 @@ export async function getMiningAnalytics(): Promise<MiningAnalyticsResult> {
     : 600;
 
   const hashrateStr = (hr: number) => {
+    if (!hr || !isFinite(hr) || hr <= 0) return '—';
     if (hr > 1e21) return `${(hr / 1e21).toFixed(1)} ZH/s`;
     if (hr > 1e18) return `${(hr / 1e18).toFixed(1)} EH/s`;
     if (hr > 1e15) return `${(hr / 1e15).toFixed(1)} PH/s`;
@@ -152,7 +153,7 @@ export async function getMiningAnalytics(): Promise<MiningAnalyticsResult> {
 async function fetchFromMempool(path: string): Promise<any> {
   try {
     const res = await fetch(`${MEMPOOL_API}${path}`, {
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(25000),
     });
     if (!res.ok) throw new Error(`mempool.space ${path} returned ${res.status}`);
     return res.json();

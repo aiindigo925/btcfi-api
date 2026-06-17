@@ -46,6 +46,7 @@ const DISCOVERY_ENDPOINTS = [
 
 /** Read-only endpoints available on free tier */
 const FREE_READ_ENDPOINTS = [
+  '/api/v1/price',
   '/api/v1/fees',
   '/api/v1/mempool',
   '/api/v1/address',
