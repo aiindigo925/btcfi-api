@@ -115,10 +115,10 @@ export const bot = {
 
 /**
  * Telegram bot is always free — no per-user rate limit.
- * Returns false (not rate limited) for all users.
+ * Returns true (allowed) for all users.
  */
 async function checkCommandRateLimit(_userId: number): Promise<boolean> {
-  return false;
+  return true;
 }
 
 // ============ WHALE CHANNEL POSTING (MP5 Phase 1) =
