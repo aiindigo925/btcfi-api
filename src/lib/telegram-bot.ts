@@ -45,6 +45,12 @@ const FOOTER =
 const PLAIN_FOOTER =
   '\n\n\u2014\n\ud83d\udca1 btcfi.aiindigo.com | @BTC_Fi_Bot | @BTCFi_Whales\nAI Indigo | FutureTools AI | OpenClaw Terrace';
 
+// HTML footer for price responses (avoids MarkdownV2 escaping issues with URLs)
+const HTML_PRICE_FOOTER =
+  '\n\n\u2014\n'
+  + '\ud83d\udca1 <i>Full API:</i> <a href="https://btcfi.aiindigo.com">btcfi.aiindigo.com</a> | <code>npm i @aiindigo/btcfi</code>\n'
+  + '<a href="https://aiindigo.com">AI Indigo</a> | <a href="https://futuretoolsai.com">FutureTools AI</a> | <a href="https://openclawterrace.com">OpenClaw Terrace</a>';
+
 // Footer for channel posts
 const CH_FOOTER =
   '\n\n\u2014\n'
@@ -295,42 +301,42 @@ const CURRENCY_NAMES: Record<string, string> = {
 };
 
 /**
- * Format a numeric price value for display. Returns a MarkdownV2-safe string.
- * Uses esc() to escape special Telegram MarkdownV2 characters.
+ * Format a numeric price value for display. Returns HTML-safe text.
+ * No MarkdownV2 escaping needed — dots/commas are safe in HTML mode.
  */
 function formatPriceValue(val: number, currency: string): string {
   const symbol = CURRENCY_SYMBOLS[currency] || currency.toUpperCase();
   // For JPY and similar low-value currencies, use no decimals
   const decimals = ['jpy', 'clp', 'cop', 'ars', 'vnd', 'idr', 'pkr', 'bdt', 'sek', 'nok', 'dkk', 'pln', 'czk', 'uah', 'thb', 'myr', 'php'].includes(currency) ? 0 : 2;
   const formatted = val.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  return esc(symbol + formatted);
+  return escHtml(symbol + formatted);
 }
 
 /**
- * Build simple price view (7 currencies). Returns MarkdownV2 text.
+ * Build simple price view (7 currencies). Returns HTML text.
  */
 function buildSimplePriceText(btcData: Record<string, number>): string {
-  let text = '\ud83d\udcc8 *BTC Price*\n\n';
+  let text = '📈 <b>BTC Price</b>\n\n';
   for (const c of SIMPLE_CURRENCIES) {
     const val = btcData[c.key];
     if (val === undefined || val === null) continue;
-    text += c.flag + ' ' + esc(c.key.toUpperCase()) + ' ' + formatPriceValue(val, c.key) + '\n';
+    text += c.flag + ' <b>' + escHtml(c.key.toUpperCase()) + '</b> ' + formatPriceValue(val, c.key) + '\n';
   }
-  return text + '\ud83d\udca1 _Tap buttons below for more currencies_';
+  return text + '💡 <i>Tap buttons below for more currencies</i>';
 }
 
 /**
- * Build expanded price view (all currencies by region). Returns MarkdownV2 text.
+ * Build expanded price view (all currencies by region). Returns HTML text.
  */
 function buildExpandedPriceText(btcData: Record<string, number>): string {
-  let text = '\ud83d\udcc8 *BTC Price \u2014 All Currencies*\n\n';
+  let text = '📈 <b>BTC Price — All Currencies</b>\n\n';
   for (const [region, currencies] of Object.entries(REGION_CURRENCIES)) {
-    text += '*' + esc(region) + '*\n';
+    text += '<b>' + escHtml(region) + '</b>\n';
     for (const cur of currencies) {
       const val = btcData[cur];
       if (val === undefined || val === null) continue;
       const flag = REGION_FLAGS[cur] || '';
-      text += flag + ' ' + esc(cur.toUpperCase()) + ' ' + formatPriceValue(val, cur) + '\n';
+      text += flag + ' <b>' + escHtml(cur.toUpperCase()) + '</b> ' + formatPriceValue(val, cur) + '\n';
     }
     text += '\n';
   }
@@ -443,25 +449,25 @@ function registerCommands(b: Bot): void {
         const btc = data.data?.btc || data.price || data.btc || {};
         const val = btc[arg];
         if (val === undefined || val === null) {
-          return ctx.reply('\u274c Currency ' + esc(arg.toUpperCase()) + ' not supported. Try: usd, eur, gbp, jpy, aud, cad, chf...');
+          return ctx.reply('\u274c Currency <b>' + escHtml(arg.toUpperCase()) + '</b> not supported. Try: usd, eur, gbp, jpy, aud, cad, chf...', { parse_mode: 'HTML' });
         }
         const symbol = CURRENCY_SYMBOLS[arg] || arg.toUpperCase() + ' ';
         return ctx.reply(
-          '\ud83d\udcc8 *BTC Price*\n\n'
-          + '\ud83d\udcb0 BTC = ' + esc(symbol + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
-          + ' ' + esc('(' + arg.toUpperCase() + ')'),
-          { parse_mode: 'MarkdownV2' }
+          '📈 <b>BTC Price</b>\n\n'
+          + '\ud83d\udcb0 BTC = <b>' + escHtml(symbol + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+          + '</b> (' + escHtml(arg.toUpperCase()) + ')',
+          { parse_mode: 'HTML' }
         );
       } catch (err) {
         console.error('[Telegram] /price single-currency failed:', err);
-        return ctx.reply('\u274c Failed to fetch price for ' + esc(arg.toUpperCase()));
+        return ctx.reply('\u274c Failed to fetch price for ' + escHtml(arg.toUpperCase()), { parse_mode: 'HTML' });
       }
     }
     try {
       const btcData = await fetchCoinGeckoPrices();
       await ctx.reply(
-        buildSimplePriceText(btcData) + FOOTER,
-        { parse_mode: 'MarkdownV2', reply_markup: PRICE_SIMPLE_KB }
+        buildSimplePriceText(btcData) + HTML_PRICE_FOOTER,
+        { parse_mode: 'HTML', reply_markup: PRICE_SIMPLE_KB }
       );
     } catch (err) {
       console.error('[Telegram] /price failed:', err);
@@ -1458,8 +1464,8 @@ function registerCommands(b: Bot): void {
         const showExpanded = data === 'price_expand' || (data === 'price_refresh' && currentView === 'expanded');
 
         const text = showExpanded
-          ? buildExpandedPriceText(btcData) + FOOTER
-          : buildSimplePriceText(btcData) + FOOTER;
+          ? buildExpandedPriceText(btcData) + HTML_PRICE_FOOTER
+          : buildSimplePriceText(btcData) + HTML_PRICE_FOOTER;
         const keyboard = showExpanded ? PRICE_EXPANDED_KB : PRICE_SIMPLE_KB;
 
         if (ctx.callbackQuery.message) {
@@ -1467,7 +1473,7 @@ function registerCommands(b: Bot): void {
             ctx.callbackQuery.message.chat.id,
             ctx.callbackQuery.message.message_id,
             text,
-            { parse_mode: 'MarkdownV2', reply_markup: keyboard }
+            { parse_mode: 'HTML', reply_markup: keyboard }
           );
         }
       } catch (err) {
