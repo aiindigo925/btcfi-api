@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const redis = getRedis();
     let posted = 0;
     let tweeted = 0;
+    let deduped = 0;
 
     for (const whale of whales.slice(0, 10)) {
       const key = `whale:seen:${whale.txid}`;
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       // Atomic dedup: SET NX returns null if key already exists.
       // This prevents race conditions from concurrent cron runs.
       const wasSet = await redis.set(key, '1', { ex: DEDUP_TTL, nx: true });
-      if (!wasSet) continue;
+      if (!wasSet) { deduped++; continue; }
 
       // Post to Telegram channel
       try {
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
       checked: whales.length,
       posted,
       tweeted,
+      deduped,
       threshold: `${minBtc} BTC`,
     });
   } catch (err) {

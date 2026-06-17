@@ -259,11 +259,19 @@ function classifyWhaleSignal(
 }
 
 export async function getWhaleTransactions(minBtc: number = 10): Promise<WhaleTransaction[]> {
-  const [recent, price, blocks] = await Promise.all([
+  const [recentResult, priceResult, blocksResult] = await Promise.allSettled([
     getMempoolRecent(),
     getBtcPrice(),
     getLatestBlocks(1),
   ]);
+
+  const recent = recentResult.status === 'fulfilled' ? recentResult.value : [];
+  const price = priceResult.status === 'fulfilled' ? priceResult.value : { USD: 100000 };
+  const blocks = blocksResult.status === 'fulfilled' ? blocksResult.value : [];
+
+  if (recentResult.status === 'rejected') {
+    console.warn('[Whales] Mempool fetch failed, using block data only:', recentResult.reason?.message);
+  }
 
   const minSats = minBtc * 1e8;
   const seen = new Set<string>();

@@ -92,9 +92,19 @@ export async function getMempoolSummary(): Promise<MempoolSummary> {
 }
 
 export async function getMempoolRecent(): Promise<any[]> {
-  const res = await fetch(`${MEMPOOL_API}/mempool/recent`, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error('Failed to fetch recent mempool txs');
-  return res.json();
+  // Primary: mempool.space
+  try {
+    const res = await fetch(`${MEMPOOL_API}/mempool/recent`, { signal: AbortSignal.timeout(8000) });
+    if (res.ok) return res.json();
+  } catch { /* fall through to backup */ }
+
+  // Backup: blockstream.info (same response format, fewer txs)
+  try {
+    const res = await fetch('https://blockstream.info/api/mempool/recent', { signal: AbortSignal.timeout(8000) });
+    if (res.ok) return res.json();
+  } catch { /* both failed */ }
+
+  return []; // graceful degradation — caller handles empty array
 }
 
 // ============ FEES ============
