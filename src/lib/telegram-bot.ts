@@ -224,7 +224,7 @@ async function api(path: string): Promise<any> {
 }
 
 function esc(s: string): string {
-  return String(s).replace(/[_*[\\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+  return String(s).replace(/[_*\[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
 }
 
 /** Escape text for HTML parse_mode. */
