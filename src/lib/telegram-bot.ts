@@ -17,9 +17,6 @@ import { Bot, InlineKeyboard } from 'grammy';
 import { addWatch, removeWatch, getWatchlist, setAlerts, getAlerts } from './watchlist';
 import { getRedis } from './redis';
 import {
-  getUserTier,
-  getUserSubscription,
-  setUserTier,
   portfolioAdd,
   portfolioRemove,
   portfolioList,
@@ -29,13 +26,8 @@ import {
   getAlertList,
   addAlert,
   removeAlert,
-  checkPremiumRateLimit,
-  FREE_MAX_PORTFOLIO,
-  PRO_MAX_PORTFOLIO,
-  FREE_MAX_ALERTS,
-  PRO_MAX_ALERTS,
-  FREE_RATE_LIMIT,
-  PRO_RATE_LIMIT,
+  MAX_PORTFOLIO,
+  MAX_ALERTS,
 } from './telegram-premium';
 
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
@@ -100,7 +92,7 @@ async function getBot(): Promise<Bot> {
       { command: 'unwatch', description: 'Stop watching' },
       { command: 'watchlist', description: 'Your watched addresses' },
       { command: 'alerts', description: 'Advanced alerts' },
-      { command: 'premium', description: 'Premium subscription' },
+      { command: 'help', description: 'Show commands' },
       { command: 'digest', description: 'Daily BTC digest (Pro)' },
       { command: 'eth_gas', description: 'ETH gas prices' },
       { command: 'sol_fees', description: 'SOL network fees' },
@@ -122,14 +114,11 @@ export const bot = {
 // ============ RATE LIMITING (Redis, per-user, tier-aware) ============
 
 /**
- * Check per-user rate limit with tier awareness.
- * Free: 10 commands/hour, Pro: 50 commands/hour.
- * Returns true if allowed, false if rate limited.
- * Fails open on Redis errors (allows request).
+ * Telegram bot is always free — no per-user rate limit.
+ * Returns false (not rate limited) for all users.
  */
-async function checkCommandRateLimit(userId: number): Promise<boolean> {
-  const { allowed, remaining } = await checkPremiumRateLimit(userId);
-  return allowed;
+async function checkCommandRateLimit(_userId: number): Promise<boolean> {
+  return false;
 }
 
 // ============ WHALE CHANNEL POSTING (MP5 Phase 1) =
@@ -391,10 +380,9 @@ function registerCommands(b: Bot): void {
     + '/watch \u2014 Watch an address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \u2014 Advanced alerts\n'
-    + '/premium \u2014 Upgrade to Pro\n'
-    + '/digest \u2014 Daily BTC digest \\(Pro\\)\n'
-    + '/help \u2014 This message'
+    + '/alerts \\u2014 Advanced alerts\\n'
+    + '/digest \\u2014 Daily BTC digest\\n'
+    + '/help \\u2014 This message'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
@@ -430,11 +418,10 @@ function registerCommands(b: Bot): void {
     + '/watch \u2014 Watch address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \u2014 Advanced alerts \\(whale/price/fee\\)\n\n'
-    + '*Premium*\n'
-    + '/premium \u2014 Upgrade to Pro \\($5/mo\\)\n'
-    + '/portfolio \u2014 Multi-address portfolio\n'
-    + '/digest \u2014 Daily BTC digest \\(Pro\\)'
+    + '/alerts \\u2014 Advanced alerts \\\\(whale/price/fee\\\\)\\n\\n'
+    + '*Tools*\\n'
+    + '/portfolio \\u2014 Multi-address portfolio\\n'
+    + '/digest \\u2014 Daily BTC digest'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
@@ -836,7 +823,7 @@ function registerCommands(b: Bot): void {
     }
   });
 
-  // ---- PORTFOLIO MANAGEMENT (Premium) ----
+  // ---- PORTFOLIO MANAGEMENT ----
 
   b.command('portfolio', async (ctx) => {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
@@ -847,17 +834,16 @@ function registerCommands(b: Bot): void {
     const parts = (ctx.match?.trim() || '').split(/\s+/);
 
     if (!sub || sub === 'help') {
-      const tier = await getUserTier(userId);
-      const max = tier === 'pro' ? PRO_MAX_PORTFOLIO : FREE_MAX_PORTFOLIO;
+      const max = MAX_PORTFOLIO;
       const count = await portfolioCount(userId);
       return ctx.reply(
-        '\ud83d\udcca *Portfolio Management*\n\n'
-        + 'Tier: ' + (tier === 'pro' ? '\u2b50 Pro' : '\ud83d\udcdc Free') + ' \\\\( ' + count + '/' + max + ' addresses\\\\)\n\n'
-        + '*Commands:*\n'
-        + '/portfolio add <address> <label> \u2014 Add address\n'
-        + '/portfolio list \u2014 Show saved addresses\n'
-        + '/portfolio remove <address> \u2014 Remove address\n'
-        + '/portfolio summary \u2014 Aggregate stats\n\n'
+        '\\ud83d\\udcca *Portfolio Management*\\n\\n'
+        + '\\ud83d\\udccc ' + count + '/' + max + ' addresses\\n\\n'
+        + '*Commands:*\\n'
+        + '/portfolio add <address> <label> \\u2014 Add address\\n'
+        + '/portfolio list \\u2014 Show saved addresses\\n'
+        + '/portfolio remove <address> \\u2014 Remove address\\n'
+        + '/portfolio summary \\u2014 Aggregate stats\\n\\n'
         + '_Or pass a BTC address directly for single-address analysis_'
         + FOOTER,
         { parse_mode: 'MarkdownV2' }
@@ -884,8 +870,7 @@ function registerCommands(b: Bot): void {
       const lines = items.map((item, i) =>
         (i + 1) + '\\. `' + esc(item.address.slice(0, 12)) + '\\\\.\\\\.\\\\.` \u2014 ' + esc(item.label)
       );
-      const tier = await getUserTier(userId);
-      const max = tier === 'pro' ? PRO_MAX_PORTFOLIO : FREE_MAX_PORTFOLIO;
+      const max = MAX_PORTFOLIO;
       return ctx.reply(
         '\ud83d\udcca *Your Portfolio* \\\\( ' + items.length + '/' + max + ' \\\)\n\n'
         + lines.join('\n') + FOOTER,
@@ -1199,77 +1184,40 @@ function registerCommands(b: Bot): void {
   // ---- PREMIUM SUBSCRIPTION ----
 
   b.command('premium', async (ctx) => {
-    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
-      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
-    }
-    const userId = ctx.from?.id || 0;
-    const sub = await getUserSubscription(userId);
-    const isPro = sub.tier === 'pro' && sub.expires_at && new Date(sub.expires_at).getTime() > Date.now();
-    const expiryLine = isPro ? '\n\u23f1 Expires: ' + sub.expires_at : '';
-
-    const paymentLink = 'https://t.me/BTC_Fi_Bot?start=pay_pro'; // placeholder for Stripe/Telegram Stars
-
     await ctx.reply(
-      '\u2b50 *BTCFi Premium*\n\n'
-      + '*Current Tier:* ' + (isPro ? '\u2705 Pro' : '\ud83d\udcdc Free') + expiryLine + '\n\n'
-      + '*Pro Benefits:*\n'
-      + '\u2022 5x higher rate limits \\(50 cmd/hr\\)\n'
-      + '\u2022 Priority whale alerts\n'
-      + '\u2022 Daily BTC digest at 9am UTC\n'
-      + '\u2022 Multi-address portfolio \\(50 addresses\\)\n'
-      + '\u2022 20 advanced alerts \\(whale/price/fee\\)\n\n'
-      + '*Price:* \\\\$5/month\n\n'
-      + (isPro
-        ? '_You are a Pro subscriber\\!_'
-        : '[\ud83d\udcb5 Upgrade to Pro](' + paymentLink + ')\n\n_Pay with Telegram Stars or Stripe_')
+      '\\u2b50 *BTCFi — Everything is Free\\!*\n\n'
+      + 'All features are available to everyone:\\n\n'
+      + '\\u2022 Unlimited commands\\n'
+      + '\\u2022 Portfolio tracking \\\\(50 addresses\\\\)\\n'
+      + '\\u2022 Daily BTC digest\\n'
+      + '\\u2022 20 advanced alerts\\n'
+      + '\\u2022 Whale channel alerts\\n\n'
+      + '_Direct API access (developers/AI agents) is paid via micropayments._'
       + FOOTER,
-      { parse_mode: 'MarkdownV2', link_preview_options: { is_disabled: true } }
+      { parse_mode: 'MarkdownV2' }
     );
   });
 
-  // ---- DIGEST (Pro only) ----
+  // ---- DIGEST ----
 
   b.command('digest', async (ctx) => {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
-      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+      return ctx.reply('\\u23f0 Rate limit exceeded. Try again in a minute.');
     }
     const userId = ctx.from?.id || 0;
-    const tier = await getUserTier(userId);
     const sub = (ctx.match?.trim() || '').toLowerCase();
 
-    // /digest enable or /digest disable — require Pro
+    // /digest enable or /digest disable
     if (sub === 'enable' || sub === 'disable') {
-      if (tier !== 'pro') {
-        return ctx.reply(
-          '\ud83d\udd10 Daily digest is a Pro feature.\n'
-          + 'Use /premium to upgrade.' + PLAIN_FOOTER
-        );
-      }
       const enabled = sub === 'enable';
       await setDigestEnabled(userId, enabled);
       return ctx.reply(
-        (enabled ? '\u2705' : '\u274c') + ' Daily digest ' + (enabled ? 'enabled' : 'disabled')
-        + ' \\(9am UTC\\)' + PLAIN_FOOTER
+        (enabled ? '\\u2705' : '\\u274c') + ' Daily digest ' + (enabled ? 'enabled' : 'disabled')
+        + ' \\\\(9am UTC\\\\)' + PLAIN_FOOTER
       );
     }
 
-    // /digest — show last 24h summary
-    if (tier !== 'pro') {
-      const enabled = await isDigestEnabled(userId);
-      return ctx.reply(
-        '\ud83d\udcca *Daily Digest*\n\n'
-        + 'Tier: \ud83d\udcdc Free\n'
-        + 'Scheduled: ' + (enabled ? '\u2705 ON' : '\u274c OFF') + '\n\n'
-        + '_Daily digest is a Pro feature\\._\n'
-        + 'Use /premium to upgrade\\.\n\n'
-        + 'Use /digest enable to schedule\\.\n'
-        + 'Use /digest disable to stop\\.'
-        + FOOTER,
-        { parse_mode: 'MarkdownV2' }
-      );
-    }
-
-    // Pro user — fetch digest data
+    // /digest — fetch digest data for everyone
     try {
       const [whaleData, priceData, feeData] = await Promise.all([
         api('/api/v1/intelligence/whales').catch(() => null),
@@ -1285,8 +1233,8 @@ function registerCommands(b: Bot): void {
       const enabled = await isDigestEnabled(userId);
 
       await ctx.reply(
-        '\ud83d\udcca *24h BTC Digest*\n\n'
-        + '\ud83d\udc0b Whale transactions: ' + whaleCount + '\n'
+        '\\ud83d\\udcca *24h BTC Digest*\\n\\n'
+        + '\\ud83d\\udc0b Whale transactions: ' + whaleCount + '\\n'
         + '\ud83d\udcb5 BTC/USD: \\\\$' + esc(btcUsd) + '\n'
         + '\u26fd Fast fee: ' + (fees.fastestFee || '\u2014') + ' sat/vB\n'
         + '\u23f1 Medium fee: ' + (fees.halfHourFee || '\u2014') + ' sat/vB\n\n'
@@ -1412,8 +1360,7 @@ function registerCommands(b: Bot): void {
         else if (a.type === 'fee') desc = 'Fee ' + a.threshold + ' sat/vB';
         return '`' + esc(a.id) + '` \u2014 ' + esc(desc);
       });
-      const tier = await getUserTier(userId);
-      const max = tier === 'pro' ? PRO_MAX_ALERTS : FREE_MAX_ALERTS;
+      const max = MAX_ALERTS;
       return ctx.reply(
         '\ud83d\udce1 *Your Alerts* \\\\( ' + alerts.length + '/' + max + ' \\\)\n\n'
         + lines.join('\n') + FOOTER,
@@ -1464,8 +1411,7 @@ function registerCommands(b: Bot): void {
     }
 
     // Default: show help
-    const tier = await getUserTier(userId);
-    const max = tier === 'pro' ? PRO_MAX_ALERTS : FREE_MAX_ALERTS;
+    const max = MAX_ALERTS;
     const alerts = await getAlertList(userId);
     await ctx.reply(
       '\ud83d\udce1 *Advanced Alerts*\n\n'
