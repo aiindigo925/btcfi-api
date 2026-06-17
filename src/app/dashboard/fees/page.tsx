@@ -10,22 +10,25 @@ export default function FeesPage() {
   const [prediction, setPrediction] = useState<any>(null);
   const [feesError, setFeesError] = useState('');
   const [predictionError, setPredictionError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API}/api/v1/fees`)
-      .then(r => {
-        if (!r.ok) throw new Error(`Fees API failed (${r.status})`);
-        return r.json();
-      })
-      .then(setFees)
-      .catch((e: Error) => setFeesError(e.message || 'Failed to load fee data'));
-    fetch(`${API}/api/v1/intelligence/fees`)
-      .then(r => {
-        if (!r.ok) throw new Error(`Prediction API failed (${r.status})`);
-        return r.json();
-      })
-      .then(d => setPrediction(d.data || d))
-      .catch((e: Error) => setPredictionError(e.message || 'Failed to load AI predictions'));
+    Promise.allSettled([
+      fetch(`${API}/api/v1/fees`)
+        .then(r => {
+          if (!r.ok) throw new Error(`Fees API failed (${r.status})`);
+          return r.json();
+        })
+        .then(setFees)
+        .catch((e: Error) => setFeesError(e.message || 'Failed to load fee data')),
+      fetch(`${API}/api/v1/intelligence/fees`)
+        .then(r => {
+          if (!r.ok) throw new Error(`Prediction API failed (${r.status})`);
+          return r.json();
+        })
+        .then(d => setPrediction(d.data || d))
+        .catch((e: Error) => setPredictionError(e.message || 'Failed to load AI predictions')),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const card = { background: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', padding: '16px', marginBottom: '12px' };
@@ -45,6 +48,8 @@ export default function FeesPage() {
     { name: 'Economy', rate: recommended.economyFee, color: '#60a5fa', desc: '~12 blocks' },
     { name: 'Minimum', rate: recommended.minimumFee, color: '#888', desc: 'Eventually' },
   ];
+
+  if (loading) return <div style={{ color: '#666', fontSize: '13px', padding: '24px' }}>Loading fees...</div>;
 
   return (
     <div>

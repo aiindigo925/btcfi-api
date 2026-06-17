@@ -143,7 +143,7 @@ export async function createPortfolio(
     updatedAt: now,
   };
 
-  await safeSet(key, JSON.stringify(portfolio), undefined);
+  await safeSet(key, JSON.stringify(portfolio), 31536000);
   return portfolio;
 }
 

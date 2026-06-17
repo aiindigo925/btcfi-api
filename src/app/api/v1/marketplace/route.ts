@@ -9,11 +9,13 @@ import { getRedis } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
+interface MarketplaceListing { name: string; description: string; price: number; endpoint: string; }
+
 export async function GET() {
   try {
     const redis = getRedis();
     const raw = await redis.lrange('marketplace:listings', 0, -1);
-    const listings = raw.map((item: string) => JSON.parse(item));
+    const listings = raw.map((item: string): MarketplaceListing => JSON.parse(item));
     return NextResponse.json({ success: true, data: listings, count: listings.length });
   } catch {
     return NextResponse.json({ success: true, data: [], count: 0, note: 'Marketplace initializing' });
@@ -49,6 +51,9 @@ export async function POST(request: Request) {
 
     // Atomic append using LPUSH (no read-modify-write race condition)
     await redis.lpush('marketplace:listings', JSON.stringify(listing));
+
+    // Refresh TTL on list key — expires after 30 days of inactivity
+    await redis.expire('marketplace:listings', 2592000);
 
     // Trim to max 1000 entries (LPUSH prepends, so newest are at index 0)
     const count = await redis.llen('marketplace:listings');

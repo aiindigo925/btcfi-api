@@ -17,6 +17,9 @@ import {
   type UTXO,
 } from './bitcoin';
 
+/** Shape of vout entries from external blockchain API responses */
+interface UtxoInfo { scriptpubkey_address: string; value: number; }
+
 // ============ YARA-STYLE PATTERN ENGINE ============
 
 export interface ThreatPattern {
@@ -111,7 +114,7 @@ function checkSingleLargeOutput(txs: Transaction[]): PatternMatchResult {
   const outputAddresses = new Map<string, number>();
   for (const tx of txs.slice(0, 20)) {
     for (const v of tx.vout) {
-      const addr = (v as any).scriptpubkey_address;
+      const addr = (v as UtxoInfo).scriptpubkey_address;
       if (addr) outputAddresses.set(addr, (outputAddresses.get(addr) || 0) + 1);
     }
   }
@@ -119,8 +122,8 @@ function checkSingleLargeOutput(txs: Transaction[]): PatternMatchResult {
   for (const tx of txs.slice(0, 10)) {
     if (tx.vout.length > 2) continue;
     for (const v of tx.vout) {
-      const addr = (v as any).scriptpubkey_address;
-      const value = (v as any).value || 0;
+      const addr = (v as UtxoInfo).scriptpubkey_address;
+      const value = (v as UtxoInfo).value || 0;
       if (value > 100_000_000 && addr && (outputAddresses.get(addr) || 0) <= 1) {
         largeToFreshCount++;
       }
@@ -142,7 +145,7 @@ function checkCircularTxs(txs: Transaction[], address: string): PatternMatchResu
   // Check if any tx sends funds back to the same address
   let circularCount = 0;
   for (const tx of txs.slice(0, 20)) {
-    const sendsToSelf = tx.vout.some((v: any) => v.scriptpubkey_address === address);
+    const sendsToSelf = tx.vout.some((v: UtxoInfo) => v.scriptpubkey_address === address);
     const receivesFromSelf = tx.vin.some((v: any) => v.prevout?.scriptpubkey_address === address);
     if (sendsToSelf && receivesFromSelf) circularCount++;
   }
@@ -155,7 +158,7 @@ function checkEqualOutputs(txs: Transaction[]): PatternMatchResult {
   let coinjoinCount = 0;
   for (const tx of txs.slice(0, 10)) {
     if (tx.vout.length < 3) continue;
-    const values = tx.vout.map((v: any) => v.value);
+    const values = tx.vout.map((v: UtxoInfo) => v.value);
     const valueCounts: Record<number, number> = {};
     for (const v of values) {
       valueCounts[v] = (valueCounts[v] || 0) + 1;
@@ -186,7 +189,7 @@ function checkPeelChain(txs: Transaction[]): PatternMatchResult {
   let peelCount = 0;
   for (const tx of txs.slice(0, 20)) {
     if (tx.vout.length !== 2) continue;
-    const [a, b] = tx.vout.map((v: any) => v.value).sort((x: number, y: number) => x - y);
+    const [a, b] = tx.vout.map((v: UtxoInfo) => v.value).sort((x: number, y: number) => x - y);
     const totalIn = tx.vin.reduce((s: number, v: any) => s + (v.prevout?.value || 0), 0);
     // Small output is <5% of total input
     if (a < totalIn * 0.05 && b > totalIn * 0.9) peelCount++;

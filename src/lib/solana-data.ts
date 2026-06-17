@@ -4,6 +4,7 @@
  */
 
 import { solanaRpcCall } from '@/lib/rpc';
+import { isValidSolanaAddress } from '@/lib/validation';
 
 // All RPC calls go through centralized solanaRpcCall with Whistle primary + auto-fallback.
 
@@ -35,7 +36,7 @@ export async function getSolFees() {
 }
 
 export async function getSolAddress(addr: string) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) throw new Error('Invalid Solana address');
+  if (!isValidSolanaAddress(addr)) throw new Error('Invalid Solana address');
   const [balance, accountInfo] = await Promise.all([
     solanaRpcCall('getBalance', [addr]) as Promise<any>,
     solanaRpcCall('getAccountInfo', [addr, { encoding: 'jsonParsed' }]) as Promise<any>,

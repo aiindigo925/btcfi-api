@@ -194,6 +194,12 @@ export default function RevenuePage() {
   const [data, setData] = useState<RevenueV2Data | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [todayKey, setTodayKey] = useState('');
+
+  useEffect(() => {
+    const now = new Date();
+    setTodayKey(now.toISOString().split('T')[0]);
+  }, []);
 
   const fetchData = useCallback(async (adminKey: string) => {
     try {
@@ -272,8 +278,6 @@ export default function RevenuePage() {
     : [];
 
   // Compute derived metrics
-  const now = new Date();
-  const todayKey = now.toISOString().slice(0, 10);
   const todayUsd = data?.dailyUsd?.[todayKey] || 0;
 
   // Last 7 days total

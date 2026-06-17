@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         await redis.incr('newsletter:pending:count');
       } catch {
         // Redis down — log only
-        console.log(`[newsletter] Pending subscription (Redis unavailable): ${email}`);
+        console.log('[newsletter] Pending subscription for', email.replace(/(.{2}).*(@.*)/, '$1***$2'));
       }
       return NextResponse.json({
         success: true,

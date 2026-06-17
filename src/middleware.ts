@@ -271,7 +271,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Track usage
-      trackUsage(keyInfo.keyHash, pathname).catch(() => {}); // fire and forget
+      trackUsage(keyInfo.keyHash, pathname).catch(err => console.error('[Middleware] Usage tracking failed:', err)); // fire and forget
 
       // Free tier API keys bypass x402 payment
       if (keyInfo.tier === 'free') {
