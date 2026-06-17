@@ -9,6 +9,7 @@ const nav = [
   { href: '/dashboard/watchlist', label: 'Watchlist' },
   { href: '/dashboard/whales', label: 'Whales' },
   { href: '/dashboard/fees', label: 'Fee Calc' },
+  { href: '/dashboard/revenue', label: '💰 Revenue' },
   { href: '/dashboard/admin', label: '🔒 Admin' },
 ];
 

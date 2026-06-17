@@ -14,6 +14,7 @@ export interface ToolDef {
 }
 
 export function getToolPrice(endpoint: string): string {
+  if (endpoint.includes('/batch')) return '$0.01 base (per-item: $0.01 balance, $0.02 risk, $0.05 entity)';
   if (endpoint.includes('/zk/verify')) return '$0.01';
   if (endpoint.includes('/zk/')) return '$0.03';
   if (endpoint.includes('/intelligence/') || endpoint.includes('/security/') || endpoint.includes('/solv/')) return '$0.02';
@@ -52,6 +53,8 @@ export const TOOLS: ToolDef[] = [
   { name: 'btcfi_whale_alert', description: 'Detect large Bitcoin transactions and whale movements.', inputSchema: { type: 'object', properties: {}, required: [] }, endpoint: '/api/v1/intelligence/whales', method: 'GET', buildUrl: () => '/api/v1/intelligence/whales' },
   { name: 'btcfi_address_risk', description: 'Risk score for a Bitcoin address based on transaction patterns.', inputSchema: { type: 'object', properties: { address: { type: 'string', description: 'Bitcoin address' } }, required: ['address'] }, endpoint: '/api/v1/intelligence/risk', method: 'GET', buildUrl: (a) => `/api/v1/intelligence/risk/${a.address}` },
   { name: 'btcfi_network_health', description: 'Bitcoin network health: hashrate, mempool congestion, difficulty.', inputSchema: { type: 'object', properties: {}, required: [] }, endpoint: '/api/v1/intelligence/network', method: 'GET', buildUrl: () => '/api/v1/intelligence/network' },
+  // Batch
+  { name: 'btcfi_batch_query', description: 'Run multiple balance lookups, risk analyses, and entity lookups in parallel. Max 50 per category.', inputSchema: { type: 'object', properties: { addresses: { type: 'array', items: { type: 'string' }, description: 'Bitcoin addresses for balance lookup (max 50)' }, risk: { type: 'array', items: { type: 'string' }, description: 'Bitcoin addresses for risk analysis (max 50)' }, entity: { type: 'array', items: { type: 'string' }, description: 'Bitcoin addresses for entity lookup (max 50)' } }, required: [] }, endpoint: '/api/v1/batch', method: 'POST', buildUrl: () => '/api/v1/batch', buildBody: (a) => JSON.stringify({ addresses: a.addresses || [], risk: a.risk || [], entity: a.entity || [] }) },
   // Security
   { name: 'btcfi_threat_analysis', description: 'YARA-pattern threat analysis for a Bitcoin address.', inputSchema: { type: 'object', properties: { address: { type: 'string', description: 'Bitcoin address' } }, required: ['address'] }, endpoint: '/api/v1/security/threat', method: 'GET', buildUrl: (a) => `/api/v1/security/threat/${a.address}` },
   // Staking

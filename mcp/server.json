@@ -1,9 +1,10 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aiindigo925/btcfi",
+  "title": "BTCFi API",
   "description": "Bitcoin intelligence for AI agents. 27 tools covering blockchain data, AI-powered analytics, security analysis, Solv Protocol BTCFi, ZK proofs, and real-time streams — powered by x402 micropayments (no API keys).",
   "version": "3.0.1",
-  "title": "BTCFi API",
+  "license": "MIT",
   "websiteUrl": "https://btcfi.aiindigo.com",
   "repository": {
     "url": "https://github.com/aiindigo925/btcfi-api",
@@ -20,12 +21,6 @@
     "ai-agents",
     "solv-protocol",
     "defi"
-  ],
-  "categories": [
-    "blockchain",
-    "finance",
-    "security",
-    "ai-agents"
   ],
   "packages": [
     {
@@ -61,15 +56,12 @@
           "isSecret": false
         }
       ]
-    },
+    }
+  ],
+  "remotes": [
     {
-      "registryType": "remote",
-      "identifier": "btcfi-mcp-remote",
-      "version": "3.0.1",
-      "transport": {
-        "type": "sse",
-        "url": "https://btcfi.aiindigo.com/mcp"
-      }
+      "type": "streamable-http",
+      "url": "https://btcfi.aiindigo.com/api/mcp"
     }
   ]
 }

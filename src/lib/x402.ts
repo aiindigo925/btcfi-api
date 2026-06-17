@@ -76,6 +76,8 @@ export const ROUTE_PRICING: Record<string, number> = {
   '/api/v1/intelligence/mempool-intel': 0.02,
   // Historical Data ($0.03)
   '/api/v1/intelligence/history': 0.03,
+  // Batch Queries ($0.01 base, per-item pricing applies)
+  '/api/v1/batch': 0.01,
 };
 
 /**

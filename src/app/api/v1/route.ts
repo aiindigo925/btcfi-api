@@ -83,6 +83,10 @@ export async function GET(request: NextRequest) {
         events: { url: '/api/v1/stream', method: 'GET', price: '$0.01', status: 'live', description: 'SSE stream: new_block, fee_change, mempool_surge' },
         whales: { url: '/api/v1/stream/whales', method: 'GET', price: '$0.01', status: 'live', description: 'SSE whale tx alerts. Query: ?min=100' },
       },
+      // ── Batch Queries ──
+      batch: {
+        query: { url: '/api/v1/batch', method: 'POST', price: '$0.01 base', status: 'live', description: 'Parallel batch: balances ($0.01/ea), risk ($0.02/ea), entities ($0.05/ea)' },
+      },
     },
     x402: getX402Status(),
     security: {

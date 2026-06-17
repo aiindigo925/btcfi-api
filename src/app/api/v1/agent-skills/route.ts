@@ -511,6 +511,30 @@ const AGENT_SKILLS: AgentSkill[] = [
 
   // ── Cross-Chain ──
   {
+    id: 'batch-query',
+    name: 'Batch Query',
+    description: 'Run multiple balance lookups, risk analyses, and entity lookups in parallel with a single request. Max 50 items per category.',
+    category: 'core',
+    params: [
+      { name: 'addresses', type: 'string', required: false, description: 'JSON array of Bitcoin addresses for balance lookups (max 50)' },
+      { name: 'risk', type: 'string', required: false, description: 'JSON array of Bitcoin addresses for risk analysis (max 50)' },
+      { name: 'entity', type: 'string', required: false, description: 'JSON array of Bitcoin addresses for entity lookup (max 50)' },
+    ],
+    endpoints: [{ method: 'POST', path: '/api/v1/batch' }],
+    price: 0.01,
+    examplePrompt: 'Look up the balance and risk score for multiple Bitcoin addresses at once.',
+    exampleResponse: {
+      success: true,
+      results: [
+        { input: 'bc1q...', result: { balance: { confirmed: { btc: '1.5' } } } },
+        { input: 'bc1q...', result: { riskScore: 25, riskGrade: 'B' } },
+      ],
+      errors: [],
+      meta: { totalItems: 2, successful: 2, failed: 0 },
+    },
+    tags: ['batch', 'bulk', 'parallel', 'multi-address', 'efficiency'],
+  },
+  {
     id: 'eth-gas',
     name: 'Ethereum Gas Prices',
     description: 'Get current Ethereum gas prices (gwei) for fast, standard, and slow transactions.',

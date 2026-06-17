@@ -455,7 +455,7 @@ async function callApi(tool, args) {
 var server = new import_server.Server(
   {
     name: "btcfi",
-    version: "1.0.0"
+    version: "3.0.0"
   },
   {
     capabilities: {

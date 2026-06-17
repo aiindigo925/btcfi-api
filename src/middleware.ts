@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkPayment, getPriceForPath, detectNetwork } from '@/lib/x402';
 import { getRateLimitTier, RATE_LIMITS, type SignerTier } from '@/lib/request-signing';
-import { recordPayment } from '@/lib/revenue';
+import { recordPaymentV2 } from '@/lib/revenue';
 import { generatePEACReceipt } from '@/lib/peac';
 import { handleFreeTier, classifyPath, getFreeTierStatus } from '@/lib/free-tier-middleware';
 
@@ -211,7 +211,7 @@ export async function middleware(request: NextRequest) {
         return paymentResponse;
       }
       // Payment valid — record it
-      recordPayment(network, pathname);
+      recordPaymentV2(network, pathname);
     }
   }
 

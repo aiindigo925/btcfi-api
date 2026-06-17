@@ -34,7 +34,7 @@ export default function DocsPage() {
       {/* Quick nav */}
       <div style={css.nav}>
         <div style={{ color: '#666', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Contents</div>
-        {['Quick Start', 'Authentication', 'x402 Payments', 'Core Endpoints', 'Intelligence', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
+        {['Quick Start', 'Authentication', 'x402 Payments', 'Core Endpoints', 'Batch Queries', 'Intelligence', 'Security', 'Solv Protocol', 'ZK Proofs', 'Streams', 'SDK', 'MCP Server', 'Rate Limits', 'Error Codes'].map(s => (
           <a key={s} href={`#${s.toLowerCase().replace(/ /g, '-')}`} style={css.navLink}>{s}</a>
         ))}
       </div>
@@ -132,6 +132,40 @@ Supported: Ed25519 (Solana), secp256k1 (EVM)`}</div>
           ].map(([ep, price, desc]) => (
             <tr key={ep as string}><td style={css.tdCode}>{ep}</td><td style={css.td}>{price}</td><td style={css.td}>{desc}</td></tr>
           ))}
+        </tbody>
+      </table>
+
+      {/* Batch Queries */}
+      <h2 style={css.h2} id="batch-queries">Batch Queries</h2>
+      <p style={css.p}>Run multiple lookups in parallel with a single request. Max 50 items per category. Processed in parallel via <code style={css.inline}>Promise.allSettled</code>.</p>
+      <div style={css.code}>{`POST /api/v1/batch
+Content-Type: application/json
+
+{
+  "addresses": ["bc1q...", "1A1zP1..."],  // balance lookups (max 50, $0.01 each)
+  "risk": ["bc1q..."],                    // risk analysis (max 50, $0.02 each)
+  "entity": ["bc1q...", "3Kzh9q..."]      // entity lookup (max 50, $0.05 each)
+}
+
+// Response:
+{
+  "success": true,
+  "results": [
+    { "input": "bc1q...", "result": { "balance": { "confirmed": { "sats": 150000000, "btc": "1.50000000", "usd": "157500.00" } } } },
+    { "input": "bc1q...", "result": { "riskScore": 25, "riskGrade": "B", "summary": "Low risk..." } },
+    { "input": "bc1q...", "result": { "entity": "Coinbase", "type": "exchange", "confidence": 0.95 } }
+  ],
+  "errors": [
+    { "input": "bc1qbad...", "error": "Address not found" }
+  ],
+  "meta": { "totalItems": 5, "successful": 4, "failed": 1, "pricing": { "addresses": "$0.01 each", "risk": "$0.02 each", "entity": "$0.05 each" } }
+}`}</div>
+      <table style={css.table}>
+        <thead><tr><th style={css.th}>Array</th><th style={css.th}>Max</th><th style={css.th}>Price</th><th style={css.th}>Description</th></tr></thead>
+        <tbody>
+          <tr><td style={css.tdCode}>addresses</td><td style={css.td}>50</td><td style={css.td}>$0.01 each</td><td style={css.td}>Balance lookup (confirmed + pending, BTC + USD)</td></tr>
+          <tr><td style={css.tdCode}>risk</td><td style={css.td}>50</td><td style={css.td}>$0.02 each</td><td style={css.td}>Risk scoring (6-factor analysis with grade A-F)</td></tr>
+          <tr><td style={css.tdCode}>entity</td><td style={css.td}>50</td><td style={css.td}>$0.05 each</td><td style={css.td}>Entity label lookup (exchanges, miners, pools)</td></tr>
         </tbody>
       </table>
 
