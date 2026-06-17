@@ -2,21 +2,50 @@
  * Price Oracle — Real-time BTC prices across currencies.
  * GET /api/v1/price
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getBtcPriceExtended } from '@/lib/bitcoin';
 import { getBtcPriceOracle } from '@/lib/price-oracle';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const result = await getBtcPriceOracle();
+    const { searchParams } = new URL(request.url);
+    const source = searchParams.get('source') ?? 'mempool';
+    const currency = searchParams.get('currency')?.toLowerCase();
 
+    if (source === 'coingecko') {
+      // CoinGecko multi-currency source
+      const allPrices = await getBtcPriceExtended();
+      let btc: Record<string, number>;
+      if (currency && allPrices[currency] !== undefined) {
+        btc = { [currency]: allPrices[currency] };
+      } else {
+        btc = allPrices;
+      }
+      return NextResponse.json({
+        success: true,
+        data: {
+          btc,
+          source: 'coingecko',
+          cached: false,
+        },
+      });
+    }
+
+    // Default: mempool source (USD + EUR)
+    const oracle = await getBtcPriceOracle();
+    const prices = oracle.btc; // { usd, eur }
+    let btc: Record<string, number>;
+    if (currency && prices[currency] !== undefined) {
+      btc = { [currency]: prices[currency] };
+    } else {
+      btc = prices;
+    }
     return NextResponse.json({
       success: true,
-      data: result,
-      meta: {
-        endpoint: 'price-oracle',
-        pricing: '$0.01/call',
-        source: 'mempool.space',
-        cache: '60s TTL',
+      data: {
+        btc,
+        source: 'mempool',
+        cached: false,
       },
     });
   } catch {

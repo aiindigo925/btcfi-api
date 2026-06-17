@@ -62,6 +62,18 @@ export async function GET(request: NextRequest) {
         console.error(`Failed to tweet whale ${whale.txid}:`, err);
       }
 
+      // Store for daily summary
+      const today = new Date().toISOString().split('T')[0];
+      const dayKey = `whale:day:${today}`;
+      try {
+        const existingDay = await redis.get(dayKey) || [];
+        const dayData = Array.isArray(existingDay) ? existingDay : [];
+        dayData.push({ txid: whale.txid, btc: parseFloat(whale.totalValueBtc), usd: parseFloat(whale.totalValueUsd), signal: whale.signal || 'transfer', ts: Date.now() });
+        await redis.set(dayKey, JSON.stringify(dayData), { ex: 172800 }); // 48h TTL
+      } catch (err) {
+        console.error(`Failed to store whale day data ${whale.txid}:`, err);
+      }
+
       // Small delay between posts to avoid rate limits
       if (posted > 0) await new Promise(r => setTimeout(r, 500));
     }

@@ -3,7 +3,8 @@
  * Humans see free tools first. Devs scroll down.
  */
 
-import { getBlockHeight, getBtcPrice } from '@/lib/bitcoin';
+import { getBlockHeight, getBtcPrice, getBtcPriceExtended } from '@/lib/bitcoin';
+import type { BtcPriceExtended } from '@/lib/bitcoin';
 import { getSolanaRpc } from '@/lib/rpc';
 import WhaleFeed from '@/components/WhaleFeed';
 
@@ -27,12 +28,46 @@ const css = {
   badge: { display: 'inline-block', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' },
   footer: { textAlign: 'center' as const, color: '#444', fontSize: '13px', borderTop: '1px solid #1a1a1a', paddingTop: '24px', marginTop: '60px' },
 };
+// ============ compact price format helper ============
+const compactPrice = (currency: string, value: number): string => {
+  if (value === 0) return `${currency} —`;
+  if (currency === 'usd') return `$${value.toLocaleString()}`;
+  if (currency === 'jpy') {
+    if (value >= 1_000_000) return `¥${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `¥${(value / 1_000).toFixed(0)}K`;
+    return `¥${value.toLocaleString()}`;
+  }
+  // eur, gbp, aud, cad, chf — abbreviate thousands
+  const prefixes: Record<string, string> = {
+    eur: '€',
+    gbp: '£',
+    aud: 'A$',
+    cad: 'C$',
+    chf: 'CHF ',
+  };
+  const prefix = prefixes[currency] ?? currency;
+  if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`;
+  return `${prefix}${value.toLocaleString()}`;
+};
 
+// ============ Hero section ============
 export default async function Home() {
   let blockHeight = 0;
-  let btcPrice = { USD: 0, EUR: 0 };
+  // BtcPriceExtended = Record<string, number> with lowercase keys (usd, eur, gbp, …)
+  let btcPrice: BtcPriceExtended = {};
   try {
-    [blockHeight, btcPrice] = await Promise.all([getBlockHeight(), getBtcPrice()]);
+    const [bh, basic, extended] = await Promise.all([
+      getBlockHeight(),
+      getBtcPrice(),
+      getBtcPriceExtended(),
+    ]);
+    blockHeight = bh;
+    // Merge: extended (lowercase) is primary; basic (uppercase) fills gaps
+    btcPrice = {
+      ...((extended ?? {}) as BtcPriceExtended),
+      usd: extended?.usd ?? basic.USD,
+      eur: extended?.eur ?? basic.EUR,
+    };
   } catch { /* defaults */ }
 
   // Plain English fee/mempool status (SSR)
@@ -87,7 +122,12 @@ export default async function Home() {
         <p style={{ fontSize: '15px', color: '#aaa', margin: '0 0 16px 0' }}>Free tools below — no signup, no payments, no API keys</p>
         <div style={css.live}>
           <span><span style={css.liveLabel}>Block </span><span style={css.liveValue}>#{blockHeight.toLocaleString()}</span></span>
-          <span><span style={css.liveLabel}>BTC </span><span style={css.liveValue}>${btcPrice.USD.toLocaleString()}</span></span>
+          <span><span style={css.liveLabel}>BTC </span><span style={css.liveValue}>${btcPrice.usd?.toLocaleString()}</span></span>
+          {btcPrice.gbp ? <span><span style={css.liveValue}>· £{(btcPrice.gbp / 1000).toFixed(0)}K</span></span> : null}
+          {btcPrice.jpy ? <span><span style={css.liveValue}>· ¥{(btcPrice.jpy / 1_000_000).toFixed(1)}M</span></span> : null}
+          {btcPrice.aud ? <span><span style={css.liveValue}>· A${(btcPrice.aud / 1000).toFixed(0)}K</span></span> : null}
+          {btcPrice.cad ? <span><span style={css.liveValue}>· C${(btcPrice.cad / 1000).toFixed(0)}K</span></span> : null}
+          {btcPrice.chf ? <span><span style={css.liveValue}>· CHF {(btcPrice.chf / 1000).toFixed(0)}K</span></span> : null}
           <span><span style={css.liveLabel}>RPC </span><span style={css.liveValue}>{getSolanaRpc().includes('whistle') ? '🟢 Whistle' : '🟡 Fallback'}</span></span>
         </div>
       </div>
@@ -185,7 +225,14 @@ export default async function Home() {
         <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: '12px', padding: '24px', textAlign: 'center' as const }}>
           <h2 style={{ fontSize: '18px', color: '#fff', margin: '0 0 12px 0' }}>What&apos;s Bitcoin Doing Right Now?</h2>
           <p style={{ fontSize: '16px', color: '#ccc', margin: 0, lineHeight: 1.6 }}>
-            Bitcoin is <span style={{ color: '#f7931a', fontWeight: 700 }}>${btcPrice.USD.toLocaleString()}</span>.
+            Bitcoin is <span style={{ color: '#f7931a', fontWeight: 700 }}>${btcPrice.usd?.toLocaleString()}</span>
+            {btcPrice.eur ? <span> / €{btcPrice.eur.toLocaleString()}</span> : null}
+            {btcPrice.gbp ? <span> / £{btcPrice.gbp.toLocaleString()}</span> : null}
+            {btcPrice.jpy ? <span> / ¥{btcPrice.jpy.toLocaleString()}</span> : null}
+            {btcPrice.aud ? <span> / A${btcPrice.aud.toLocaleString()}</span> : null}
+            {btcPrice.cad ? <span> / C${btcPrice.cad.toLocaleString()}</span> : null}
+            {btcPrice.chf ? <span> / CHF {btcPrice.chf.toLocaleString()}</span> : null}
+            .
             {' '}Fees are <span style={{ color: '#4ade80', fontWeight: 600 }}>{feeWord}</span>.
             {' '}Mempool is <span style={{ color: '#4ade80', fontWeight: 600 }}>{mempoolWord}</span>.
             {' '}<span style={{ color: '#aaa' }}>{advice}</span>

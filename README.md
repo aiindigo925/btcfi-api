@@ -3,13 +3,13 @@
 **Bitcoin Intelligence API for AI Agents**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
+[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
 
 Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com) · [GitHub](https://github.com/aiindigo925/btcfi-api)
 
 ---
 
-BTCFi API is an agent-native Bitcoin intelligence platform providing 33 endpoints across Bitcoin, Ethereum, and Solana. Powered by x402 micropayments — pay $0.01–$0.05 per query in USDC, no API keys or subscriptions required. AI agents discover endpoints at `/llms.txt` and integrate via MCP, SDK, or raw HTTP.
+BTCFi API is an agent-native Bitcoin intelligence platform providing 80+ endpoints across Bitcoin, Ethereum, Solana, Lightning Network, Runes, and Taproot Assets. Powered by x402 micropayments — pay $0.01–$0.05 per query in USDC, no API keys or subscriptions required. CoinGecko integration provides multi-currency pricing (38 fiat currencies). AI agents discover endpoints at `/llms.txt` and integrate via MCP, SDK, or raw HTTP.
 
 ## Free Tier
 
@@ -135,6 +135,57 @@ https://btcfi.aiindigo.com/openapi.json
 | `GET /api/v1/sol/fees` | SOL priority fees |
 | `GET /api/v1/sol/address/{addr}` | SOL address balance |
 
+### Runes Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/runes` | List all Bitcoin Runes tokens | $0.02 |
+| `GET /api/v1/runes/trending` | Trending Runes by 24h activity | $0.02 |
+| `GET /api/v1/runes/{ticker}` | Runes token details | $0.02 |
+| `GET /api/v1/runes/{ticker}/holders` | Holder distribution | $0.02 |
+| `GET /api/v1/runes/{ticker}/transfers` | Recent transfers | $0.02 |
+
+### Taproot Assets Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/taproot/assets/{addr}` | Taproot Assets held by address | $0.02 |
+| `GET /api/v1/taproot/assets/{addr}/{assetId}` | Taproot Asset details | $0.02 |
+
+### Lightning Network Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/lightning/node/{pubkey}` | Lightning node info | $0.02 |
+| `GET /api/v1/lightning/channels/{chanId}` | Channel details | $0.02 |
+| `GET /api/v1/lightning/routing-fee` | Routing fee estimate | $0.02 |
+| `GET /api/v1/intelligence/lightning` | Lightning network intelligence | $0.02 |
+
+### Portfolio Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/portfolio` | List portfolios | $0.01 |
+| `GET /api/v1/portfolio/{userId}` | Get user portfolio | $0.01 |
+| `GET /api/v1/portfolio/{userId}/analytics` | Portfolio analytics | $0.02 |
+| `GET /api/v1/intelligence/portfolio/{addr}` | Address portfolio analysis | $0.02 |
+
+### Alerts Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/alerts` | List alert rules | Free |
+| `GET /api/v1/alerts/rules` | Manage alert rules | Free |
+| `DELETE /api/v1/alerts/rules/{id}` | Delete alert rule | Free |
+| `GET /api/v1/alerts/history` | Alert trigger history | Free |
+| `POST /api/v1/alerts/evaluate` | Evaluate alert conditions | Free |
+
+### Price Endpoints
+
+| Endpoint | Description | Price |
+|----------|-------------|-------|
+| `GET /api/v1/price` | BTC price (CoinGecko: 38 fiat currencies) | Free |
+
 ### Real-Time Streams
 
 | Endpoint | Description | Price |
@@ -162,13 +213,19 @@ https://btcfi.aiindigo.com/openapi.json
 | Category | Price (USDC) |
 |----------|-------------|
 | Core Bitcoin (fees, mempool, address, tx, block) | $0.01 |
-| Intelligence (whales, risk, MVRV, SOPR, NUPL, HODL waves) | $0.02 |
+| Intelligence (whales, risk, MVRV, SOPR, NUPL, HODL waves, cluster, graph) | $0.02 |
 | Security (threat analysis) | $0.02 |
 | Solv Protocol (reserves, yield, liquidity, risk) | $0.02 |
+| Runes (tokens, holders, transfers, trending) | $0.02 |
+| Taproot Assets (asset list, asset details) | $0.02 |
+| Lightning Network (nodes, channels, routing fees) | $0.02 |
+| Portfolio (addresses, analytics) | $0.01–$0.02 |
 | ZK Proofs (balance, age, membership) | $0.03 |
 | Transaction broadcast | $0.05 |
 | Ethereum / Solana | $0.01 |
 | Streams (SSE) | $0.01 |
+| Price (CoinGecko multi-currency) | Free |
+| Alerts (rules, history, evaluate) | Free |
 | System (health, status) | Free |
 | Agent Discovery (/llms.txt, /api/mcp) | Free |
 
@@ -192,7 +249,7 @@ BTCFi API uses **x402 micropayments** — no API keys, no OAuth, no subscription
 
 No payments, no signup. Just open Telegram:
 
-- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 15 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`
+- **[@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot)** — 28 commands + inline mode. `/price`, `/fees`, `/mempool`, `/address`, `/tx`, `/whale`, `/risk`, `/network`, `/help`, `/eth_gas`, `/sol_fees`, `/watch`, `/unwatch`, `/watchlist`, `/alerts`, `/runes`, `/ordinals`, `/lightning`, `/portfolio`, `/taproot`, `/cluster`, `/graph`, `/batch`, `/webhooks`, `/price eur`, `/price gbp`, `/price jpy`
 - **[@BTCFi_Whales](https://t.me/BTCFi_Whales)** — Real-time whale transaction alerts, auto-posted every 15 min
 - **[Web Dashboard](https://btcfi.aiindigo.com/dashboard)** — Live BTC price, fees, mempool, address lookup, whale watch
 
@@ -240,10 +297,10 @@ Required environment variables:
 | Package | Description |
 |---------|-------------|
 | [`@aiindigo/btcfi`](https://www.npmjs.com/package/@aiindigo/btcfi) | TypeScript SDK — 28 methods |
-| [`@aiindigo/btcfi-mcp`](https://www.npmjs.com/package/@aiindigo/btcfi-mcp) | MCP Server — 27 tools for Claude, ChatGPT, Gemini |
+| [`@aiindigo/btcfi-mcp`](https://www.npmjs.com/package/@aiindigo/btcfi-mcp) | MCP Server — 45 tools for Claude, ChatGPT, Gemini |
 | [MCP Registry](https://registry.modelcontextprotocol.io) | `io.github.aiindigo925/btcfi` |
 | [Glama](https://glama.ai/mcp/servers) | Indexed — searchable MCP directory |
-| [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) | Telegram bot — 15 commands + inline mode |
+| [@BTC_Fi_Bot](https://t.me/BTC_Fi_Bot) | Telegram bot — 28 commands + inline mode |
 
 ## Contributing
 

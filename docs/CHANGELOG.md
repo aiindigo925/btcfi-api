@@ -1,5 +1,27 @@
 # BTCFi API — Changelog
 
+## v4.2.0 (2026-06-17)
+
+### Multi-Currency Price
+- CoinGecko integration: 38 fiat currencies via `/api/v1/price?source=coingecko`
+- Single currency lookup: `/api/v1/price?currency=eur`
+- Landing page shows 7 currencies in hero
+
+### Telegram Bot Upgrades
+- `/price` shows 7 currencies with flag emojis + inline buttons
+- 40+ currencies expanded view grouped by region
+- `/price <currency>` shortcut (e.g., `/price eur`)
+- `/whale` improved with time-ago and emoji indicators
+- Better error messages for invalid addresses
+- Whale channel: relatable value comparisons
+
+### Whale Channel
+- Daily summary cron (9am UTC)
+- Weekly whale report cron (Monday 9am UTC)
+- Whale context: Tesla/homes/property comparisons
+
+---
+
 ## v4.1.0 (2026-06-17)
 
 **Address Cluster / Graph Analysis — heuristic-based address clustering.**

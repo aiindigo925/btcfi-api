@@ -5,6 +5,43 @@
 
 const MEMPOOL_API = 'https://mempool.space/api';
 
+// ============ COINGEKO MULTI-CURRENCY ============
+
+const COINGEKO_CURRENCIES = 'usd,eur,gbp,jpy,aud,cad,chf,cny,inr,hkd,sgd,krw,brl,zar,mxn,idr,try,sar,aed,sek,nok,dkk,pln,czk,ils,thb,twd,php,myr,pkr,ngn,ars,clp,cop,egp,uah,vnd,bdt,kwd,gel';
+let coingeckoCache: Record<string, number> | null = null;
+let coingeckoCacheTimestamp = 0;
+const COINGEKO_CACHE_TTL = 60_000; // 60 seconds
+
+/**
+ * BTC price in multiple currencies.
+ * Keys are lowercase currency codes (usd, eur, gbp, …).
+ */
+export type BtcPriceExtended = Record<string, number>;
+
+/**
+ * Fetch BTC price in 38 currencies from CoinGecko.
+ * In-memory cache for 60s. Gracefully returns {} on failure.
+ */
+export async function getBtcPriceExtended(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (coingeckoCache && now - coingeckoCacheTimestamp < COINGEKO_CACHE_TTL) {
+    return coingeckoCache;
+  }
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${COINGEKO_CURRENCIES}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return {};
+    const json = await res.json();
+    const prices: Record<string, number> = json?.bitcoin ?? {};
+    coingeckoCache = prices;
+    coingeckoCacheTimestamp = now;
+    return prices;
+  } catch {
+    return {};
+  }
+}
+
 export interface MempoolSummary {
   count: number;
   vsize: number;
@@ -227,3 +264,5 @@ export async function getBtcPrice(): Promise<{ USD: number; EUR: number }> {
   if (!res.ok) throw new Error('Failed to fetch price');
   return res.json();
 }
+
+

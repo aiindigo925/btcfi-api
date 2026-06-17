@@ -13,7 +13,7 @@
  * created when TELEGRAM_BOT_TOKEN is set and first update arrives.
  */
 
-import { Bot } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 import { addWatch, removeWatch, getWatchlist, setAlerts, getAlerts } from './watchlist';
 import { getRedis } from './redis';
 import {
@@ -102,6 +102,8 @@ async function getBot(): Promise<Bot> {
       { command: 'alerts', description: 'Advanced alerts' },
       { command: 'premium', description: 'Premium subscription' },
       { command: 'digest', description: 'Daily BTC digest (Pro)' },
+      { command: 'eth_gas', description: 'ETH gas prices' },
+      { command: 'sol_fees', description: 'SOL network fees' },
       { command: 'help', description: 'Show all commands' },
     ]).catch(() => { /* ignore if already set */ });
     _initialized = true;
@@ -130,7 +132,27 @@ async function checkCommandRateLimit(userId: number): Promise<boolean> {
   return allowed;
 }
 
-// ============ WHALE CHANNEL POSTING (MP5 Phase 1) ============
+// ============ WHALE CHANNEL POSTING (MP5 Phase 1) =
+
+/** Build a relatable comparison line for whale posts based on USD value. */
+function buildWhaleComparison(usdEscaped: string): string {
+  // Parse back to raw number (the value was already escaped for Markdown)
+  const raw = parseFloat(usdEscaped.replace(/,/g, '')) || 0;
+  if (raw <= 0) return '';
+  let line = '';
+  if (raw < 500000) {
+    line = '\u2615 \u2248 ' + Math.round(raw / 5) + ' premium coffees';
+  } else if (raw < 2000000) {
+    line = '\ud83d\ude97 \u2248 ' + Math.round(raw / 50000) + ' Tesla Model 3s';
+  } else if (raw < 10000000) {
+    line = '\ud83c\udfe0 \u2248 ' + Math.round(raw / 500000) + ' US homes';
+  } else if (raw < 50000000) {
+    line = '\ud83c\udfe2 \u2248 ' + Math.round(raw / 5000000) + ' commercial properties';
+  } else {
+    line = '\ud83c\udfd7\ufe0f \u2248 ' + Math.round(raw / 50000000) + ' skyscrapers';
+  }
+  return '\n' + esc(line);
+}
 
 export async function postWhaleToChannel(whale: {
   txid: string;
@@ -190,6 +212,7 @@ export async function postWhaleToChannel(whale: {
       + '\u26fd Fee: ' + fr + '\n'
       + ioLine
       + signalLine
+      + buildWhaleComparison(usd)
       + CH_FOOTER;
 
     await b.api.sendMessage(WHALE_CHANNEL_ID, msg, {
@@ -229,6 +252,119 @@ function looksLikeTxid(s: string): boolean {
 function maxLen(s: string, n: number): string {
   return s.length > n ? s.slice(0, n) : s;
 }
+
+// ============ PRICE HELPERS ============
+
+const SIMPLE_CURRENCIES = [
+  { key: 'usd',  flag: '\ud83c\uddfa\ud83c\uddf8', symbol: '$',   prefix: '' },
+  { key: 'eur',  flag: '\ud83c\uddea\ud83c\uddfa', symbol: '\u20ac', prefix: '' },
+  { key: 'gbp',  flag: '\ud83c\uddec\ud83c\udde7', symbol: '\u00a3', prefix: '' },
+  { key: 'jpy',  flag: '\ud83c\uddef\ud83c\uddf5', symbol: '\u00a5', prefix: '' },
+  { key: 'aud',  flag: '\ud83c\udde6\ud83c\uddfa', symbol: 'A$',  prefix: 'A$' },
+  { key: 'cad',  flag: '\ud83c\udde8\ud83c\udde6', symbol: 'C$',  prefix: 'C$' },
+  { key: 'chf',  flag: '\ud83c\udde8\ud83c\udded', symbol: 'CHF', prefix: 'CHF ' },
+] as const;
+
+const REGION_CURRENCIES = {
+  'Americas': ['usd', 'cad', 'brl', 'mxn', 'ars', 'clp', 'cop'],
+  'Europe': ['eur', 'gbp', 'sek', 'nok', 'dkk', 'pln', 'czk', 'uah', 'ils', 'chf'],
+  'Asia-Pacific': ['jpy', 'cny', 'inr', 'kwd', 'hkd', 'sgd', 'twd', 'thb', 'myr', 'idr', 'php', 'vnd', 'pkr', 'bdt'],
+  'Middle East & Africa': ['sar', 'aed', 'egp', 'zar', 'ngn', 'gel'],
+};
+
+const REGION_FLAGS: Record<string, string> = {
+  usd: '\ud83c\uddfa\ud83c\uddf8', cad: '\ud83c\udde8\ud83c\udde6', brl: '\ud83c\udde7\ud83c\uddf7', mxn: '\ud83c\uddf2\ud83c\uddfd', ars: '\ud83c\udde6\ud83c\uddf7', clp: '\ud83c\udde8\ud83c\uddf1', cop: '\ud83c\udde8\ud83c\uddf4',
+  eur: '\ud83c\uddea\ud83c\uddfa', gbp: '\ud83c\uddec\ud83c\udde7', sek: '\ud83c\uddf8\ud83c\uddea', nok: '\ud83c\uddf3\ud83c\uddf4', dkk: '\ud83c\udde9\ud83c\uddf0', pln: '\ud83c\uddf5\ud83c\uddf1', czk: '\ud83c\udde8\ud83c\uddff', uah: '\ud83c\uddfa\ud83c\udde6', ils: '\ud83c\uddee\ud83c\uddf1', chf: '\ud83c\udde8\ud83c\udded',
+  jpy: '\ud83c\uddef\ud83c\uddf5', cny: '\ud83c\udde8\ud83c\uddf3', inr: '\ud83c\uddee\ud83c\uddf3', kwd: '\ud83c\uddf0\ud83c\uddfc', hkd: '\ud83c\udded\ud83c\uddf0', sgd: '\ud83c\uddf8\ud83c\uddec', twd: '\ud83c\uddf9\ud83c\uddfc', thb: '\ud83c\uddf9\ud83c\udded', myr: '\ud83c\uddf2\ud83c\uddfe', idr: '\ud83c\uddee\ud83c\udde9', php: '\ud83c\uddf5\ud83c\udded', vnd: '\ud83c\uddfb\ud83c\uddf3', pkr: '\ud83c\uddf5\ud83c\uddf0', bdt: '\ud83c\udde7\ud83c\udde9',
+  sar: '\ud83c\uddf8\ud83c\udde6', aed: '\ud83c\udde6\ud83c\uddea', egp: '\ud83c\uddea\ud83c\uddec', zar: '\ud83c\uddff\ud83c\udde6', ngn: '\ud83c\uddf3\ud83c\uddec', gel: '\ud83c\uddec\ud83c\uddea',
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  usd: '$', eur: '\u20ac', gbp: '\u00a3', jpy: '\u00a5', aud: 'A$', cad: 'C$', chf: 'CHF ',
+  brl: 'R$', mxn: 'MX$', ars: 'AR$', clp: 'CL$', cop: 'COP',
+  sek: 'SEK', nok: 'NOK', dkk: 'DKK', pln: 'PLN', czk: 'CZK', uah: 'UAH', ils: 'ILS',
+  cny: '\u00a5', inr: '\u20b9', kwd: 'KWD', hkd: 'HK$', sgd: 'S$', twd: 'NT$', thb: '\u0e3f', myr: 'RM', idr: 'Rp', php: '\u20b1', vnd: '\u20ab', pkr: 'PKR', bdt: '\u09f3',
+  sar: 'SAR', aed: 'AED', egp: 'EGP', zar: 'ZAR', ngn: 'NGN', gel: 'GEL',
+};
+
+const CURRENCY_NAMES: Record<string, string> = {
+  usd: 'US Dollar', eur: 'Euro', gbp: 'British Pound', jpy: 'Japanese Yen',
+  aud: 'Australian Dollar', cad: 'Canadian Dollar', chf: 'Swiss Franc',
+  brl: 'Brazilian Real', mxn: 'Mexican Peso', ars: 'Argentine Peso',
+  clp: 'Chilean Peso', cop: 'Colombian Peso', sek: 'Swedish Krona',
+  nok: 'Norwegian Krone', dkk: 'Danish Krone', pln: 'Polish Zloty',
+  czk: 'Czech Koruna', uah: 'Ukrainian Hryvnia', ils: 'Israeli Shekel',
+  cny: 'Chinese Yuan', inr: 'Indian Rupee', kwd: 'Kuwaiti Dinar',
+  hkd: 'Hong Kong Dollar', sgd: 'Singapore Dollar', twd: 'Taiwan Dollar',
+  thb: 'Thai Baht', myr: 'Malaysian Ringgit', idr: 'Indonesian Rupiah',
+  php: 'Philippine Peso', vnd: 'Vietnamese Dong', pkr: 'Pakistani Rupee',
+  bdt: 'Bangladeshi Taka', sar: 'Saudi Riyal', aed: 'UAE Dirham',
+  egyptian: 'Egyptian Pound', zar: 'South African Rand', ngn: 'Nigerian Naira',
+  gel: 'Georgian Lari', egp: 'Egyptian Pound',
+};
+
+/**
+ * Format a numeric price value for display. Returns a MarkdownV2-safe string.
+ * Uses esc() to escape special Telegram MarkdownV2 characters.
+ */
+function formatPriceValue(val: number, currency: string): string {
+  const symbol = CURRENCY_SYMBOLS[currency] || currency.toUpperCase();
+  // For JPY and similar low-value currencies, use no decimals
+  const decimals = ['jpy', 'clp', 'cop', 'ars', 'vnd', 'idr', 'pkr', 'bdt', 'sek', 'nok', 'dkk', 'pln', 'czk', 'uah', 'thb', 'myr', 'php'].includes(currency) ? 0 : 2;
+  const formatted = val.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return esc(symbol + formatted);
+}
+
+/**
+ * Build simple price view (7 currencies). Returns MarkdownV2 text.
+ */
+function buildSimplePriceText(btcData: Record<string, number>): string {
+  let text = '\ud83d\udcc8 *BTC Price*\n\n';
+  for (const c of SIMPLE_CURRENCIES) {
+    const val = btcData[c.key];
+    if (val === undefined || val === null) continue;
+    text += c.flag + ' ' + esc(c.key.toUpperCase()) + ' ' + formatPriceValue(val, c.key) + '\n';
+  }
+  return text + '\ud83d\udca1 _Tap buttons below for more currencies_';
+}
+
+/**
+ * Build expanded price view (all currencies by region). Returns MarkdownV2 text.
+ */
+function buildExpandedPriceText(btcData: Record<string, number>): string {
+  let text = '\ud83d\udcc8 *BTC Price \u2014 All Currencies*\n\n';
+  for (const [region, currencies] of Object.entries(REGION_CURRENCIES)) {
+    text += '*' + esc(region) + '*\n';
+    for (const cur of currencies) {
+      const val = btcData[cur];
+      if (val === undefined || val === null) continue;
+      const flag = REGION_FLAGS[cur] || '';
+      text += flag + ' ' + esc(cur.toUpperCase()) + ' ' + formatPriceValue(val, cur) + '\n';
+    }
+    text += '\n';
+  }
+  return text.trimEnd();
+}
+
+/**
+ * Fetch BTC prices from CoinGecko. Returns { btc: Record<string, number> }.
+ */
+async function fetchCoinGeckoPrices(): Promise<Record<string, number>> {
+  const data = await api('/api/v1/price?source=coingecko');
+  // Handle different response shapes
+  if (data.data?.btc) return data.data.btc;
+  if (data.price) return data.price;
+  if (data.btc) return data.btc;
+  return data as Record<string, number>;
+}
+
+const PRICE_SIMPLE_KB = new InlineKeyboard()
+  .text('\ud83c\udf0d 40+ Currencies', 'price_expand')
+  .text('\ud83d\udd04 Refresh', 'price_refresh');
+
+const PRICE_EXPANDED_KB = new InlineKeyboard()
+  .text('\ud83d\udd19 Simple View', 'price_simple')
+  .text('\ud83d\udd04 Refresh', 'price_refresh');
 
 // ============ COMMAND REGISTRATION ============
 
@@ -308,16 +444,33 @@ function registerCommands(b: Bot): void {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
       return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
     }
+    const arg = (ctx.match || '').trim().toLowerCase();
+    if (arg && /^[a-z]{3}$/.test(arg)) {
+      // Single-currency shortcut: /price eur
+      try {
+        const data = await api('/api/v1/price?source=coingecko&currency=' + arg);
+        const btc = data.data?.btc || data.price || data.btc || {};
+        const val = btc[arg];
+        if (val === undefined || val === null) {
+          return ctx.reply('\u274c Currency ' + esc(arg.toUpperCase()) + ' not supported. Try: usd, eur, gbp, jpy, aud, cad, chf...');
+        }
+        const symbol = CURRENCY_SYMBOLS[arg] || arg.toUpperCase() + ' ';
+        return ctx.reply(
+          '\ud83d\udcc8 *BTC Price*\n\n'
+          + '\ud83d\udcb0 BTC = ' + esc(symbol + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+          + ' ' + esc('(' + arg.toUpperCase() + ')'),
+          { parse_mode: 'MarkdownV2' }
+        );
+      } catch (err) {
+        console.error('[Telegram] /price single-currency failed:', err);
+        return ctx.reply('\u274c Failed to fetch price for ' + esc(arg.toUpperCase()));
+      }
+    }
     try {
-      const data = await api('/api/v1/price');
-      const p = data.data?.btc || data.price || {};
-      const usd = esc(Math.round(p.usd || p.btcUsd || 0).toLocaleString());
-      const eur = esc(Math.round(p.eur || p.btcEur || 0).toLocaleString());
+      const btcData = await fetchCoinGeckoPrices();
       await ctx.reply(
-        '\u20bf *Bitcoin Price*\n\n'
-        + '\ud83d\udcb5 USD: \\$' + usd + '\n'
-        + '\ud83d\udcb6 EUR: \u20ac' + eur + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        buildSimplePriceText(btcData) + FOOTER,
+        { parse_mode: 'MarkdownV2', reply_markup: PRICE_SIMPLE_KB }
       );
     } catch (err) {
       console.error('[Telegram] /price failed:', err);
@@ -378,7 +531,7 @@ function registerCommands(b: Bot): void {
     }
     const addr = ctx.match?.trim();
     if (!addr || !looksLikeBtcAddress(addr)) {
-      return ctx.reply('Usage: /address <bitcoin_address>\nExample: /address bc1q...');
+      return ctx.reply('\u274c Invalid Bitcoin address.\nExpected format:\n\u2022 bc1q... (Bech32)\n\u2022 1... (Legacy)\n\u2022 3... (P2SH)');
     }
     try {
       const data = await api('/api/v1/address/' + encodeURIComponent(addr));
@@ -394,7 +547,11 @@ function registerCommands(b: Bot): void {
       );
     } catch (err) {
       console.error('[Telegram] /address failed:', err);
-      await ctx.reply('\u274c Address not found or invalid');
+      if (err instanceof TypeError || (err as any)?.code === 'ECONNREFUSED' || (err as any)?.name === 'AbortError') {
+        await ctx.reply('\u26a0\ufe0f Network error \u2014 try again in a moment.');
+      } else {
+        await ctx.reply('\u274c Address not found on blockchain.\nCheck the address and try again.');
+      }
     }
   });
 
@@ -461,8 +618,21 @@ function registerCommands(b: Bot): void {
       const whales = data.data?.transactions || [];
       if (!whales.length) return ctx.reply('\ud83d\udc0b No recent whale activity');
       const lines = whales.slice(0, 5).map((w: any) => {
-        const sigEmoji = w.signal === 'buy' ? '\ud83d\udfe2' : w.signal === 'sell' ? '\ud83d\udd34' : '\ud83d\udc0b';
-        return sigEmoji + ' ' + esc(w.totalValueBtc || '?') + ' BTC \u2014 `' + esc((w.txid || '').slice(0, 12)) + '\\.\\.\\.' + '`';
+        const sigEmoji = w.signal === 'buy' ? '\ud83d\udfe2' : w.signal === 'sell' ? '\ud83d\udd34' : '\ud83d\udfe1';
+        const btcVal = w.totalValueBtc || '?';
+        const usdVal = w.totalValueUsd ? '$' + parseFloat(w.totalValueUsd).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '';
+        let timeAgo = '';
+        if (w.timestamp) {
+          const diff = Date.now() - new Date(w.timestamp).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) timeAgo = 'just now';
+          else if (mins < 60) timeAgo = mins + 'm ago';
+          else if (mins < 1440) timeAgo = Math.floor(mins / 60) + 'h ago';
+          else timeAgo = Math.floor(mins / 1440) + 'd ago';
+        }
+        return sigEmoji + ' ' + esc(btcVal) + ' BTC'
+          + (usdVal ? ' (' + esc(usdVal) + ')' : '')
+          + (timeAgo ? ' \u2014 ' + esc(timeAgo) : '');
       });
       await ctx.reply('\ud83d\udc0b *Recent Whales*\n\n' + lines.join('\n') + FOOTER, { parse_mode: 'MarkdownV2' });
     } catch (err) {
@@ -1311,6 +1481,43 @@ function registerCommands(b: Bot): void {
       + FOOTER,
       { parse_mode: 'MarkdownV2' }
     );
+  });
+
+  // ---- CALLBACK QUERY HANDLERS ----
+
+  b.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+
+    // Price-related callbacks
+    if (data === 'price_expand' || data === 'price_simple' || data === 'price_refresh') {
+      try {
+        await ctx.answerCallbackQuery(); // acknowledge the callback immediately
+
+        const btcData = await fetchCoinGeckoPrices();
+        // Determine current view from existing message buttons
+        const currentButtons = ctx.callbackQuery.message?.reply_markup?.inline_keyboard as { callback_data?: string }[][] | undefined;
+        const currentView = currentButtons?.[0]?.[0]?.callback_data === 'price_simple' ? 'expanded' : 'simple';
+        const showExpanded = data === 'price_expand' || (data === 'price_refresh' && currentView === 'expanded');
+
+        const text = showExpanded
+          ? buildExpandedPriceText(btcData) + FOOTER
+          : buildSimplePriceText(btcData) + FOOTER;
+        const keyboard = showExpanded ? PRICE_EXPANDED_KB : PRICE_SIMPLE_KB;
+
+        if (ctx.callbackQuery.message) {
+          await ctx.api.editMessageText(
+            ctx.callbackQuery.message.chat.id,
+            ctx.callbackQuery.message.message_id,
+            text,
+            { parse_mode: 'MarkdownV2', reply_markup: keyboard }
+          );
+        }
+      } catch (err) {
+        console.error('[Telegram] price callback failed:', err);
+        await ctx.answerCallbackQuery({ text: 'Failed to refresh price', show_alert: true }).catch(() => {});
+      }
+      return;
+    }
   });
 
   // ---- INLINE QUERY ----

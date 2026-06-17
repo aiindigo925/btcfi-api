@@ -12,6 +12,7 @@ export interface PriceOracleResult {
   btc: {
     usd: number;
     eur: number;
+    [key: string]: number;
   };
   timestamp: string;
 }
