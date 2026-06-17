@@ -9,7 +9,8 @@
  * Start: cd ~/btcfi-api && npx tsx scripts/telegram-bot-webhook.ts
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createServer } from 'http';
 import { bot } from '../src/lib/telegram-bot';
 
