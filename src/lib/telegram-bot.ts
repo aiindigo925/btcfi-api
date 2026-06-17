@@ -16,6 +16,27 @@
 import { Bot } from 'grammy';
 import { addWatch, removeWatch, getWatchlist, setAlerts, getAlerts } from './watchlist';
 import { getRedis } from './redis';
+import {
+  getUserTier,
+  getUserSubscription,
+  setUserTier,
+  portfolioAdd,
+  portfolioRemove,
+  portfolioList,
+  portfolioCount,
+  isDigestEnabled,
+  setDigestEnabled,
+  getAlertList,
+  addAlert,
+  removeAlert,
+  checkPremiumRateLimit,
+  FREE_MAX_PORTFOLIO,
+  PRO_MAX_PORTFOLIO,
+  FREE_MAX_ALERTS,
+  PRO_MAX_ALERTS,
+  FREE_RATE_LIMIT,
+  PRO_RATE_LIMIT,
+} from './telegram-premium';
 
 const API = process.env.BTCFI_API_URL || 'https://btcfi.aiindigo.com';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -70,7 +91,7 @@ async function getBot(): Promise<Bot> {
       { command: 'sopr', description: 'SOPR metric' },
       { command: 'nupl', description: 'Net Unrealized P/L' },
       { command: 'entity', description: 'Entity cluster lookup' },
-      { command: 'portfolio', description: 'Portfolio analysis' },
+      { command: 'portfolio', description: 'Portfolio management' },
       { command: 'staking', description: 'Staking status' },
       { command: 'threat', description: 'Security threat check' },
       { command: 'eth_addr', description: 'ETH address lookup' },
@@ -78,7 +99,9 @@ async function getBot(): Promise<Bot> {
       { command: 'watch', description: 'Watch address' },
       { command: 'unwatch', description: 'Stop watching' },
       { command: 'watchlist', description: 'Your watched addresses' },
-      { command: 'alerts', description: 'Toggle DM alerts' },
+      { command: 'alerts', description: 'Advanced alerts' },
+      { command: 'premium', description: 'Premium subscription' },
+      { command: 'digest', description: 'Daily BTC digest (Pro)' },
       { command: 'help', description: 'Show all commands' },
     ]).catch(() => { /* ignore if already set */ });
     _initialized = true;
@@ -94,29 +117,17 @@ export const bot = {
   },
 };
 
-// ============ RATE LIMITING (Redis, per-user) ============
-
-const RATE_LIMIT_WINDOW = 60; // seconds
-const RATE_LIMIT_MAX = 15; // max commands per window per user
+// ============ RATE LIMITING (Redis, per-user, tier-aware) ============
 
 /**
- * Check per-user rate limit for bot commands.
+ * Check per-user rate limit with tier awareness.
+ * Free: 10 commands/hour, Pro: 50 commands/hour.
  * Returns true if allowed, false if rate limited.
  * Fails open on Redis errors (allows request).
  */
 async function checkCommandRateLimit(userId: number): Promise<boolean> {
-  try {
-    const redis = getRedis();
-    const key = `tg:cmd:${userId}`;
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, RATE_LIMIT_WINDOW);
-    }
-    return count <= RATE_LIMIT_MAX;
-  } catch {
-    // Fail open on Redis error
-    return true;
-  }
+  const { allowed, remaining } = await checkPremiumRateLimit(userId);
+  return allowed;
 }
 
 // ============ WHALE CHANNEL POSTING (MP5 Phase 1) ============
@@ -238,11 +249,13 @@ function registerCommands(b: Bot): void {
     + '/l2 \u2014 Bitcoin L2 ecosystem\n'
     + '/block \u2014 Latest blocks\n'
     + '/entity \u2014 Entity cluster\n'
-    + '/portfolio \u2014 Portfolio analysis\n'
+    + '/portfolio \u2014 Portfolio management\n'
     + '/watch \u2014 Watch an address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \u2014 Toggle DM alerts\n'
+    + '/alerts \u2014 Advanced alerts\n'
+    + '/premium \u2014 Upgrade to Pro\n'
+    + '/digest \u2014 Daily BTC digest \\(Pro\\)\n'
     + '/help \u2014 This message'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
@@ -266,8 +279,7 @@ function registerCommands(b: Bot): void {
     + '/lightning \u2014 Lightning Network\n'
     + '/signal \u2014 Composite cycle signal\n'
     + '/l2 \u2014 Bitcoin L2 ecosystem\n'
-    + '/entity \u2014 Entity cluster lookup\n'
-    + '/portfolio \u2014 Portfolio analysis\n\n'
+    + '/entity \u2014 Entity cluster lookup\n\n'
     + '*On-Chain Metrics*\n'
     + '/mvrv \u2014 MVRV Z-Score\n'
     + '/sopr \u2014 SOPR metric\n'
@@ -280,7 +292,11 @@ function registerCommands(b: Bot): void {
     + '/watch \u2014 Watch address\n'
     + '/unwatch \u2014 Stop watching\n'
     + '/watchlist \u2014 Your watched addresses\n'
-    + '/alerts \u2014 Toggle DM alerts'
+    + '/alerts \u2014 Advanced alerts \\(whale/price/fee\\)\n\n'
+    + '*Premium*\n'
+    + '/premium \u2014 Upgrade to Pro \\($5/mo\\)\n'
+    + '/portfolio \u2014 Multi-address portfolio\n'
+    + '/digest \u2014 Daily BTC digest \\(Pro\\)'
     + FOOTER,
     { parse_mode: 'MarkdownV2' }
   ));
@@ -648,32 +664,143 @@ function registerCommands(b: Bot): void {
     }
   });
 
+  // ---- PORTFOLIO MANAGEMENT (Premium) ----
+
   b.command('portfolio', async (ctx) => {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
       return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
     }
-    const addr = ctx.match?.trim();
-    if (!addr || !looksLikeBtcAddress(addr)) {
-      return ctx.reply('Usage: /portfolio <bitcoin_address>');
-    }
-    try {
-      const data = await api('/api/v1/intelligence/portfolio/' + encodeURIComponent(addr));
-      const d = data.data || {};
-      const assets = (d.assets || []).slice(0, 5).map((a: any) =>
-        '  ' + esc(a.name || a.symbol || '?') + ': $' + esc((a.valueUsd || 0).toLocaleString())
-      );
-      await ctx.reply(
-        '\ud83d\udcca *Portfolio*\n\n'
-        + '`' + esc(addr.slice(0, 12)) + '\\.\\.\\.' + '`\n\n'
-        + '\ud83d\udcb0 Total: $' + esc((d.totalValueUsd || 0).toLocaleString()) + '\n'
-        + '\ud83d\udcc4 BTC: ' + esc(d.totalBtc || '0') + '\n\n'
-        + '*Assets:*\n'
-        + (assets.length ? assets.join('\n') : '\u2014') + FOOTER,
+    const userId = ctx.from?.id || 0;
+    const sub = (ctx.match?.trim() || '').toLowerCase();
+    const parts = (ctx.match?.trim() || '').split(/\s+/);
+
+    if (!sub || sub === 'help') {
+      const tier = await getUserTier(userId);
+      const max = tier === 'pro' ? PRO_MAX_PORTFOLIO : FREE_MAX_PORTFOLIO;
+      const count = await portfolioCount(userId);
+      return ctx.reply(
+        '\ud83d\udcca *Portfolio Management*\n\n'
+        + 'Tier: ' + (tier === 'pro' ? '\u2b50 Pro' : '\ud83d\udcdc Free') + ' \\\\( ' + count + '/' + max + ' addresses\\\\)\n\n'
+        + '*Commands:*\n'
+        + '/portfolio add <address> <label> \u2014 Add address\n'
+        + '/portfolio list \u2014 Show saved addresses\n'
+        + '/portfolio remove <address> \u2014 Remove address\n'
+        + '/portfolio summary \u2014 Aggregate stats\n\n'
+        + '_Or pass a BTC address directly for single-address analysis_'
+        + FOOTER,
         { parse_mode: 'MarkdownV2' }
       );
-    } catch (err) {
-      console.error('[Telegram] /portfolio failed:', err);
-      await ctx.reply('\u274c Portfolio lookup failed');
+    }
+
+    // /portfolio add <address> <label>
+    if (parts[0] === 'add') {
+      const addr = parts[1];
+      const label = parts.slice(2).join(' ') || '';
+      if (!addr || !looksLikeBtcAddress(addr)) {
+        return ctx.reply('Usage: /portfolio add <bitcoin_address> <label>');
+      }
+      const result = await portfolioAdd(userId, addr, label);
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // /portfolio list
+    if (parts[0] === 'list') {
+      const items = await portfolioList(userId);
+      if (!items.length) {
+        return ctx.reply('\ud83d\udccd No addresses in portfolio. Use /portfolio add <address> <label>' + PLAIN_FOOTER);
+      }
+      const lines = items.map((item, i) =>
+        (i + 1) + '\\. `' + esc(item.address.slice(0, 12)) + '\\\\.\\\\.\\\\.` \u2014 ' + esc(item.label)
+      );
+      const tier = await getUserTier(userId);
+      const max = tier === 'pro' ? PRO_MAX_PORTFOLIO : FREE_MAX_PORTFOLIO;
+      return ctx.reply(
+        '\ud83d\udcca *Your Portfolio* \\\\( ' + items.length + '/' + max + ' \\\)\n\n'
+        + lines.join('\n') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
+
+    // /portfolio remove <address>
+    if (parts[0] === 'remove') {
+      const addr = parts[1];
+      if (!addr) {
+        return ctx.reply('Usage: /portfolio remove <address>');
+      }
+      const result = await portfolioRemove(userId, addr);
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // /portfolio summary
+    if (parts[0] === 'summary') {
+      const items = await portfolioList(userId);
+      if (!items.length) {
+        return ctx.reply('\ud83d\udccd No addresses in portfolio.' + PLAIN_FOOTER);
+      }
+      try {
+        let totalBtc = 0;
+        let totalUsd = 0;
+        const addressData: { label: string; address: string; btc: number; usd: number }[] = [];
+
+        // Fetch balances for all addresses
+        for (const item of items) {
+          try {
+            const data = await api('/api/v1/address/' + encodeURIComponent(item.address));
+            const bal = data.balance?.confirmed || {};
+            const btc = parseFloat(bal.btc) || 0;
+            const usd = parseFloat(bal.usd) || 0;
+            totalBtc += btc;
+            totalUsd += usd;
+            addressData.push({ label: item.label, address: item.address, btc, usd });
+          } catch {
+            addressData.push({ label: item.label, address: item.address, btc: 0, usd: 0 });
+          }
+        }
+
+        const lines = addressData.map((a) => {
+          const pct = totalBtc > 0 ? ((a.btc / totalBtc) * 100).toFixed(1) : '0.0';
+          return esc(a.label) + ': ' + a.btc.toFixed(8) + ' BTC \\\\( ' + pct + '% \\\)';
+        });
+
+        return ctx.reply(
+          '\ud83d\udcca *Portfolio Summary*\n\n'
+          + '\ud83d\udcb0 *Total:* ' + totalBtc.toFixed(8) + ' BTC\n'
+          + '\ud83d\udcb5 *USD:* \\\\$' + esc(Math.round(totalUsd).toLocaleString()) + '\n'
+          + '\ud83d\udcce *Addresses:* ' + items.length + '\n\n'
+          + '*Allocation:*\n'
+          + lines.join('\n') + FOOTER,
+          { parse_mode: 'MarkdownV2' }
+        );
+      } catch (err) {
+        console.error('[Telegram] /portfolio summary failed:', err);
+        return ctx.reply('\u274c Failed to compute summary');
+      }
+    }
+
+    // Fallback: treat as single-address analysis (backward compat)
+    const addr = sub;
+    if (looksLikeBtcAddress(addr)) {
+      try {
+        const data = await api('/api/v1/intelligence/portfolio/' + encodeURIComponent(addr));
+        const d = data.data || {};
+        const assets = (d.assets || []).slice(0, 5).map((a: any) =>
+          '  ' + esc(a.name || a.symbol || '?') + ': $' + esc((a.valueUsd || 0).toLocaleString())
+        );
+        await ctx.reply(
+          '\ud83d\udcca *Portfolio*\n\n'
+          + '`' + esc(addr.slice(0, 12)) + '\\\\.\\\\.\\\\.' + '`\n\n'
+          + '\ud83d\udcb0 Total: $' + esc((d.totalValueUsd || 0).toLocaleString()) + '\n'
+          + '\ud83d\udcc4 BTC: ' + esc(d.totalBtc || '0') + '\n\n'
+          + '*Assets:*\n'
+          + (assets.length ? assets.join('\n') : '\u2014') + FOOTER,
+          { parse_mode: 'MarkdownV2' }
+        );
+      } catch (err) {
+        console.error('[Telegram] /portfolio failed:', err);
+        await ctx.reply('\u274c Portfolio lookup failed');
+      }
+    } else {
+      await ctx.reply('Usage: /portfolio <address> or /portfolio add|list|remove|summary');
     }
   });
 
@@ -897,6 +1024,115 @@ function registerCommands(b: Bot): void {
     }
   });
 
+  // ---- PREMIUM SUBSCRIPTION ----
+
+  b.command('premium', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const userId = ctx.from?.id || 0;
+    const sub = await getUserSubscription(userId);
+    const isPro = sub.tier === 'pro' && sub.expires_at && new Date(sub.expires_at).getTime() > Date.now();
+    const expiryLine = isPro ? '\n\u23f1 Expires: ' + sub.expires_at : '';
+
+    const paymentLink = 'https://t.me/BTC_Fi_Bot?start=pay_pro'; // placeholder for Stripe/Telegram Stars
+
+    await ctx.reply(
+      '\u2b50 *BTCFi Premium*\n\n'
+      + '*Current Tier:* ' + (isPro ? '\u2705 Pro' : '\ud83d\udcdc Free') + expiryLine + '\n\n'
+      + '*Pro Benefits:*\n'
+      + '\u2022 5x higher rate limits \\(50 cmd/hr\\)\n'
+      + '\u2022 Priority whale alerts\n'
+      + '\u2022 Daily BTC digest at 9am UTC\n'
+      + '\u2022 Multi-address portfolio \\(50 addresses\\)\n'
+      + '\u2022 20 advanced alerts \\(whale/price/fee\\)\n\n'
+      + '*Price:* \\\\$5/month\n\n'
+      + (isPro
+        ? '_You are a Pro subscriber\\!_'
+        : '[\ud83d\udcb5 Upgrade to Pro](' + paymentLink + ')\n\n_Pay with Telegram Stars or Stripe_')
+      + FOOTER,
+      { parse_mode: 'MarkdownV2', link_preview_options: { is_disabled: true } }
+    );
+  });
+
+  // ---- DIGEST (Pro only) ----
+
+  b.command('digest', async (ctx) => {
+    if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
+      return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
+    }
+    const userId = ctx.from?.id || 0;
+    const tier = await getUserTier(userId);
+    const sub = (ctx.match?.trim() || '').toLowerCase();
+
+    // /digest enable or /digest disable — require Pro
+    if (sub === 'enable' || sub === 'disable') {
+      if (tier !== 'pro') {
+        return ctx.reply(
+          '\ud83d\udd10 Daily digest is a Pro feature.\n'
+          + 'Use /premium to upgrade.' + PLAIN_FOOTER
+        );
+      }
+      const enabled = sub === 'enable';
+      await setDigestEnabled(userId, enabled);
+      return ctx.reply(
+        (enabled ? '\u2705' : '\u274c') + ' Daily digest ' + (enabled ? 'enabled' : 'disabled')
+        + ' \\(9am UTC\\)' + PLAIN_FOOTER
+      );
+    }
+
+    // /digest — show last 24h summary
+    if (tier !== 'pro') {
+      const enabled = await isDigestEnabled(userId);
+      return ctx.reply(
+        '\ud83d\udcca *Daily Digest*\n\n'
+        + 'Tier: \ud83d\udcdc Free\n'
+        + 'Scheduled: ' + (enabled ? '\u2705 ON' : '\u274c OFF') + '\n\n'
+        + '_Daily digest is a Pro feature\\._\n'
+        + 'Use /premium to upgrade\\.\n\n'
+        + 'Use /digest enable to schedule\\.\n'
+        + 'Use /digest disable to stop\\.'
+        + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
+
+    // Pro user — fetch digest data
+    try {
+      const [whaleData, priceData, feeData] = await Promise.all([
+        api('/api/v1/intelligence/whales').catch(() => null),
+        api('/api/v1/price').catch(() => null),
+        api('/api/v1/fees').catch(() => null),
+      ]);
+
+      const whales = whaleData?.data?.transactions || [];
+      const whaleCount = whales.length;
+      const price = priceData?.data?.btc || priceData?.price || {};
+      const btcUsd = Math.round(price.usd || price.btcUsd || 0).toLocaleString();
+      const fees = feeData?.fees?.recommended || {};
+      const enabled = await isDigestEnabled(userId);
+
+      await ctx.reply(
+        '\ud83d\udcca *24h BTC Digest*\n\n'
+        + '\ud83d\udc0b Whale transactions: ' + whaleCount + '\n'
+        + '\ud83d\udcb5 BTC/USD: \\\\$' + esc(btcUsd) + '\n'
+        + '\u26fd Fast fee: ' + (fees.fastestFee || '\u2014') + ' sat/vB\n'
+        + '\u23f1 Medium fee: ' + (fees.halfHourFee || '\u2014') + ' sat/vB\n\n'
+        + '*Recent Whales:*\n'
+        + whales.slice(0, 3).map((w: any) =>
+          '  \u2022 ' + esc(w.totalValueBtc || '?') + ' BTC \u2014 `' + esc((w.txid || '').slice(0, 10)) + '\\\\.\\\\.\\\\.`'
+        ).join('\n') + '\n\n'
+        + 'Scheduled digest: ' + (enabled ? '\u2705 ON' : '\u274c OFF') + '\n'
+        + '_Use /digest enable to schedule daily at 9am UTC_'
+        + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
+    } catch (err) {
+      console.error('[Telegram] /digest failed:', err);
+      await ctx.reply('\u274c Failed to fetch digest data');
+    }
+  });
+
   // ---- WATCHLIST COMMANDS (MP5 Phase 5) ----
 
   b.command('watch', async (ctx) => {
@@ -964,18 +1200,117 @@ function registerCommands(b: Bot): void {
     if (!await checkCommandRateLimit(ctx.from?.id || 0)) {
       return ctx.reply('\u23f0 Rate limit exceeded. Try again in a minute.');
     }
-    const arg = ctx.match?.trim().toLowerCase();
-    if (arg !== 'on' && arg !== 'off') {
-      return ctx.reply('Usage: /alerts on  or  /alerts off');
+    const userId = ctx.from?.id || 0;
+    const raw = (ctx.match?.trim() || '').toLowerCase();
+    const parts = (ctx.match?.trim() || '').split(/\s+/);
+
+    // /alerts on or /alerts off — legacy toggle
+    if (raw === 'on' || raw === 'off') {
+      try {
+        const chatId = String(ctx.chat.id);
+        await setAlerts(chatId, raw === 'on');
+        await ctx.reply((raw === 'on'
+          ? "\u2705 Alerts enabled \u2014 you'll get DMs when watched balances change"
+          : "\u274c Alerts disabled") + PLAIN_FOOTER);
+      } catch (err) {
+        console.error('[Telegram] /alerts failed:', err);
+        await ctx.reply('\u274c Failed to update alerts');
+      }
+      return;
     }
-    try {
-      const chatId = String(ctx.chat.id);
-      await setAlerts(chatId, arg === 'on');
-      await ctx.reply((arg === 'on' ? '\u2705 Alerts enabled \u2014 you\'ll get DMs when watched balances change' : '\u274c Alerts disabled') + PLAIN_FOOTER);
-    } catch (err) {
-      console.error('[Telegram] /alerts failed:', err);
-      await ctx.reply('\u274c Failed to update alerts');
+
+    // /alerts list — show active alerts
+    if (parts[0] === 'list') {
+      const alerts = await getAlertList(userId);
+      if (!alerts.length) {
+        return ctx.reply(
+          '\ud83d\udce1 *No active alerts*\n\n'
+          + 'Create alerts with:\n'
+          + '/alerts whale <min\\_btc>\n'
+          + '/alerts price <above|below> <price>\n'
+          + '/alerts fee <above> <sat\\_vb>'
+          + PLAIN_FOOTER,
+          { parse_mode: 'MarkdownV2' }
+        );
+      }
+      const lines = alerts.map((a) => {
+        let desc = '';
+        if (a.type === 'whale') desc = 'Whale tx >= ' + a.threshold + ' BTC';
+        else if (a.type === 'price') desc = 'Price ' + a.threshold;
+        else if (a.type === 'fee') desc = 'Fee ' + a.threshold + ' sat/vB';
+        return '`' + esc(a.id) + '` \u2014 ' + esc(desc);
+      });
+      const tier = await getUserTier(userId);
+      const max = tier === 'pro' ? PRO_MAX_ALERTS : FREE_MAX_ALERTS;
+      return ctx.reply(
+        '\ud83d\udce1 *Your Alerts* \\\\( ' + alerts.length + '/' + max + ' \\\)\n\n'
+        + lines.join('\n') + FOOTER,
+        { parse_mode: 'MarkdownV2' }
+      );
     }
+
+    // /alerts remove <id>
+    if (parts[0] === 'remove') {
+      const alertId = parts[1];
+      if (!alertId) {
+        return ctx.reply('Usage: /alerts remove <alert_id>');
+      }
+      const result = await removeAlert(userId, alertId);
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // /alerts whale <min_btc>
+    if (parts[0] === 'whale') {
+      const minBtc = parts[1];
+      if (!minBtc || isNaN(parseFloat(minBtc))) {
+        return ctx.reply('Usage: /alerts whale <min_btc>\nExample: /alerts whale 100');
+      }
+      const result = await addAlert(userId, 'whale', minBtc);
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // /alerts price <above|below> <price>
+    if (parts[0] === 'price') {
+      const direction = parts[1];
+      const price = parts[2];
+      if (!direction || !price || (direction !== 'above' && direction !== 'below')) {
+        return ctx.reply('Usage: /alerts price <above|below> <price>\nExample: /alerts price above 100000');
+      }
+      const result = await addAlert(userId, 'price', direction + ' ' + price);
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // /alerts fee <above> <sat_vb>
+    if (parts[0] === 'fee') {
+      const direction = parts[1];
+      const satVb = parts[2];
+      if (!direction || !satVb || direction !== 'above') {
+        return ctx.reply('Usage: /alerts fee <above> <sat_vb>\nExample: /alerts fee above 50');
+      }
+      const result = await addAlert(userId, 'fee', satVb + ' sat/vB');
+      return ctx.reply((result.ok ? '\u2705 ' : '\u274c ') + result.message + PLAIN_FOOTER);
+    }
+
+    // Default: show help
+    const tier = await getUserTier(userId);
+    const max = tier === 'pro' ? PRO_MAX_ALERTS : FREE_MAX_ALERTS;
+    const alerts = await getAlertList(userId);
+    await ctx.reply(
+      '\ud83d\udce1 *Advanced Alerts*\n\n'
+      + 'Active: ' + alerts.length + '/' + max + '\n\n'
+      + '*Create:*\n'
+      + '/alerts whale <min\\_btc> \u2014 Whale tx threshold\n'
+      + '/alerts price <above|below> <usd> \u2014 Price crossing\n'
+      + '/alerts fee <above> <sat\\_vb> \u2014 Fee spike\n\n'
+      + '*Manage:*\n'
+      + '/alerts list \u2014 Show active alerts\n'
+      + '/alerts remove <id> \u2014 Remove alert\n\n'
+      + '*Legacy:*\n'
+      + '/alerts on \u2014 Enable watch alerts\n'
+      + '/alerts off \u2014 Disable watch alerts'
+      + FOOTER,
+      { parse_mode: 'MarkdownV2' }
+    );
   });
 
   // ---- INLINE QUERY ----

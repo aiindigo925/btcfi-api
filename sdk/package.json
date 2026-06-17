@@ -1,15 +1,15 @@
 {
   "name": "@aiindigo/btcfi",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "TypeScript SDK for BTCFi API — Bitcoin data, intelligence, security, Solv Protocol, and ZK proofs via x402 micropayments",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -19,18 +19,35 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "bitcoin", "btcfi", "x402", "micropayments", "mcp", "ai-agents",
-    "solv-protocol", "zk-proofs", "mempool", "whale-alerts", "threat-analysis"
+    "bitcoin",
+    "btcfi",
+    "x402",
+    "micropayments",
+    "zk-proofs",
+    "mempool",
+    "whale-alerts",
+    "threat-analysis",
+    "sdk",
+    "blockchain",
+    "api-client"
   ],
   "author": "AI Indigo <ai@aiindigo.com>",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/aiindigo925/btcfi-api" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiindigo925/btcfi-api"
+  },
   "homepage": "https://btcfi.aiindigo.com",
-  "bugs": { "url": "https://github.com/aiindigo925/btcfi-api/issues" },
-  "engines": { "node": ">=18" },
+  "bugs": {
+    "url": "https://github.com/aiindigo925/btcfi-api/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.0"

@@ -11,14 +11,21 @@ const nav = [
   { href: '/dashboard/fees', label: 'Fee Calc' },
   { href: '/dashboard/revenue', label: '💰 Revenue' },
   { href: '/dashboard/api-keys', label: '🔑 API Keys' },
+  { href: '/dashboard/analytics', label: '📊 Analytics' },
   { href: '/dashboard/admin', label: '🔒 Admin' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <WalletProvider>
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-sidebar { display: none !important; }
+          .dashboard-main { padding: 16px !important; max-width: 100% !important; }
+        }
+      `}</style>
       <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a', color: '#e0e0e0', fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
-        <nav style={{ width: '200px', borderRight: '1px solid #1a1a1a', padding: '20px 0', flexShrink: 0 }}>
+        <nav className="dashboard-sidebar" style={{ width: '200px', borderRight: '1px solid #1a1a1a', padding: '20px 0', flexShrink: 0 }}>
           <div style={{ color: '#f7931a', fontWeight: 700, fontSize: '18px', padding: '0 16px 20px', borderBottom: '1px solid #1a1a1a', marginBottom: '8px' }}>₿ Dashboard</div>
           {nav.map(n => (
             <Link key={n.href} href={n.href} style={{ display: 'block', padding: '8px 16px', color: '#888', textDecoration: 'none', fontSize: '13px' }}>{n.label}</Link>
@@ -28,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <Link href="/" style={{ display: 'block', padding: '8px 16px', color: '#888', textDecoration: 'none', fontSize: '13px', marginTop: '8px' }}>← API Home</Link>
         </nav>
-        <main style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px' }}>{children}</main>
+        <main className="dashboard-main" style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px' }}>{children}</main>
       </div>
     </WalletProvider>
   );
