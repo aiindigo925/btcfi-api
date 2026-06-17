@@ -160,7 +160,7 @@ export async function createRule(
   const existing = await redis.get<AlertRule[]>(key);
   const rules: AlertRule[] = existing || [];
   rules.push(fullRule);
-  await redis.set(key, JSON.stringify(rules));
+  await redis.set(key, JSON.stringify(rules), { ex: 7_776_000 });
 
   return fullRule;
 }
@@ -179,7 +179,7 @@ export async function deleteRule(userId: string, ruleId: string): Promise<boolea
   const filtered = rules.filter((r) => r.id !== ruleId);
   if (filtered.length === rules.length) return false;
 
-  await redis.set(key, JSON.stringify(filtered));
+  await redis.set(key, JSON.stringify(filtered), { ex: 7_776_000 });
   // Clean up previous value key
   await redis.del(prevKey(userId, ruleId)).catch(() => {});
 
@@ -350,7 +350,7 @@ async function updateAnomaly(
   if (n < 2) {
     state.avg = currentValue;
     state.stddev = 0;
-    await redis.set(key, JSON.stringify(state));
+    await redis.set(key, JSON.stringify(state), { ex: 86_400 });
     return { zscore: 0, state };
   }
 
@@ -363,7 +363,7 @@ async function updateAnomaly(
   // Z-score
   const zscore = state.stddev === 0 ? 0 : (currentValue - state.avg) / state.stddev;
 
-  await redis.set(key, JSON.stringify(state));
+  await redis.set(key, JSON.stringify(state), { ex: 86_400 });
   return { zscore, state };
 }
 
@@ -518,7 +518,7 @@ export async function evaluateRules(): Promise<{
             rule.last_triggered = new Date().toISOString();
             // Persist updated rule
             const updatedRules = rules.map((r) => (r.id === rule.id ? rule : r));
-            await redis.set(rulesKey(userId), JSON.stringify(updatedRules));
+            await redis.set(rulesKey(userId), JSON.stringify(updatedRules), { ex: 7_776_000 });
 
             // Store history event
             await storeHistoryEvent(userId, {
@@ -779,7 +779,7 @@ async function storeHistoryEvent(userId: string, event: AlertEvent): Promise<voi
     history.length = MAX_HISTORY;
   }
 
-  await redis.set(key, JSON.stringify(history));
+  await redis.set(key, JSON.stringify(history), { ex: 2_592_000 });
 }
 
 /**

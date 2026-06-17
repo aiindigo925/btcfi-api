@@ -29,11 +29,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'name and price required' }, { status: 400 });
     }
 
+    const priceNum = Number(price);
+    if (isNaN(priceNum) || priceNum < 0 || priceNum > 1000000) {
+      return NextResponse.json({ error: 'Invalid price' }, { status: 400 });
+    }
+
     const listing = {
       id: `agent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       name,
       description: description || '',
-      price: Number(price),
+      price: priceNum,
       endpoint: endpoint || '',
       created: new Date().toISOString(),
       reputation: 0,

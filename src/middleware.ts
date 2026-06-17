@@ -39,22 +39,33 @@ async function checkRateLimit(ip: string, tier: SignerTier): Promise<{ allowed: 
     const redis = getRedis();
     const key = `ratelimit:${tier}:${ip}`;
     const now = Date.now();
-    const windowStart = now - WINDOW_MS;
 
-    // Sliding window: remove expired entries, count current
-    await redis.zremrangebyscore(key, 0, windowStart);
-    const count = await redis.zcard(key);
+    // Atomic sliding window via Lua script — prevents race conditions
+    // where concurrent requests could all see count < limit and all add entries
+    const luaScript = `
+      local key = KEYS[1]
+      local window = tonumber(ARGV[1])
+      local limit = tonumber(ARGV[2])
+      local now = tonumber(ARGV[3])
+      redis.call('zremrangebyscore', key, 0, now - window)
+      local count = redis.call('zcard', key)
+      if count < limit then
+        redis.call('zadd', key, now, now .. math.random())
+        redis.call('expire', key, math.ceil(window / 1000))
+        return {1, count}
+      end
+      return {0, count}
+    `;
+    const result = await redis.eval(luaScript, [key], [WINDOW_MS, limit, now]) as number[];
+    const allowed = result[0] === 1;
+    const count = result[1] as number;
 
-    if (count >= limit) {
-      // Get oldest entry to calculate reset time
+    if (!allowed) {
+      // Get oldest entry to calculate reset time (only on denied path)
       const oldest = await redis.zrange(key, 0, 0, { withScores: true }) as any[];
       const resetAt = oldest.length > 0 ? Number(oldest[0].score) + WINDOW_MS : now + WINDOW_MS;
       return { allowed: false, remaining: 0, resetAt };
     }
-
-    // Add current request
-    await redis.zadd(key, { score: now, member: `${now}:${Math.random().toString(36).slice(2)}` });
-    await redis.expire(key, Math.ceil(WINDOW_MS / 1000));
 
     return { allowed: true, remaining: limit - count - 1, resetAt: now + WINDOW_MS };
   } catch {
@@ -286,8 +297,8 @@ export async function middleware(request: NextRequest) {
       response.headers.set('X-RateLimit-Remaining', quota.remaining === Infinity ? 'unlimited' : String(quota.remaining));
       return response;
     } catch (err) {
-      console.error('[API-Key] Validation error:', err);
-      // Fail open — proceed to normal auth flow
+      console.error('[Middleware] API key validation error:', err);
+      return NextResponse.json({ error: 'Auth service unavailable' }, { status: 503 });
     }
   }
 

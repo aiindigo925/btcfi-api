@@ -123,12 +123,12 @@ export async function registerWebhook(
   const existing = await redis.get<Webhook[]>(key);
   const webhooks: Webhook[] = existing || [];
   webhooks.push(webhook);
-  await redis.set(key, JSON.stringify(webhooks));
+  await redis.set(key, JSON.stringify(webhooks), { ex: 2_592_000 });
 
   // Add to global index for trigger evaluation
   await redis.sadd(WEBHOOK_INDEX_KEY, webhook.id);
   // Store individual webhook for lookup during evaluation
-  await redis.set(`webhook:one:${webhook.id}`, JSON.stringify(webhook));
+  await redis.set(`webhook:one:${webhook.id}`, JSON.stringify(webhook), { ex: 2_592_000 });
 
   return webhook;
 }
@@ -147,7 +147,7 @@ export async function removeWebhook(apiKey: string, webhookId: string): Promise<
   const filtered = webhooks.filter((w) => w.id !== webhookId);
   if (filtered.length === webhooks.length) return false;
 
-  await redis.set(key, JSON.stringify(filtered));
+  await redis.set(key, JSON.stringify(filtered), { ex: 2_592_000 });
   await redis.srem(WEBHOOK_INDEX_KEY, webhookId);
   await redis.del(`webhook:one:${webhookId}`);
 
@@ -259,13 +259,13 @@ export async function fireWebhook(
         if (existingWebhook) {
           existingWebhook.lastFiredAt = now;
           existingWebhook.fireCount += 1;
-          await redis.set(`webhook:one:${webhook.id}`, JSON.stringify(existingWebhook));
+          await redis.set(`webhook:one:${webhook.id}`, JSON.stringify(existingWebhook), { ex: 2_592_000 });
           // Also update in user's list
           const userWebhooks = await listWebhooks(existingWebhook.apiKey);
           const idx = userWebhooks.findIndex((w) => w.id === webhook.id);
           if (idx >= 0) {
             userWebhooks[idx] = existingWebhook;
-            await redis.set(webhookKey(existingWebhook.apiKey), JSON.stringify(userWebhooks));
+            await redis.set(webhookKey(existingWebhook.apiKey), JSON.stringify(userWebhooks), { ex: 2_592_000 });
           }
         }
 

@@ -171,7 +171,7 @@ export async function isDigestEnabled(userId: number): Promise<boolean> {
 
 export async function setDigestEnabled(userId: number, enabled: boolean): Promise<void> {
   const redis = getRedis();
-  await redis.set(`tg:digest:${userId}`, enabled ? 'on' : 'off');
+  await redis.set(`tg:digest:${userId}`, enabled ? 'on' : 'off', { ex: 7_776_000 });
 }
 
 // ── Advanced Alerts ────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ export async function addAlert(
   alerts.push(alert);
 
   const redis = getRedis();
-  await redis.set(`tg:user_alerts:${userId}`, JSON.stringify(alerts));
+  await redis.set(`tg:user_alerts:${userId}`, JSON.stringify(alerts), { ex: 7_776_000 });
   return { ok: true, message: `Alert created: ${id}` };
 }
 
@@ -223,7 +223,7 @@ export async function removeAlert(
   }
   alerts.splice(idx, 1);
   const redis = getRedis();
-  await redis.set(`tg:user_alerts:${userId}`, JSON.stringify(alerts));
+  await redis.set(`tg:user_alerts:${userId}`, JSON.stringify(alerts), { ex: 7_776_000 });
   return { ok: true, message: `Removed alert ${alertId}.` };
 }
 
