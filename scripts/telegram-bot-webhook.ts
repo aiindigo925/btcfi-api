@@ -14,7 +14,14 @@ dotenv.config({ path: '.env.local' });
 
 import { createServer } from 'http';
 
-const PORT = 3400;
+const PORT = Number(process.env.PORT) || 3400;
+process.on('unhandledRejection', (reason) => {
+  console.error('[BTCFi Bot] Unhandled rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[BTCFi Bot] Uncaught exception:', err);
+});
+
 const SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
 
 async function main() {
