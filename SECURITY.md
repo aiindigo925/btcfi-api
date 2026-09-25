@@ -125,23 +125,6 @@ All API responses include:
 
 ---
 
-## NPM Supply Chain Security
-
-### 7-Day Cooling Period
-- **NEVER install npm packages released within 7 days** — applies to new deps, updates, and security patches
-- Verified via `npm view <pkg>@<ver> time` before every install
-- Emergency bypass: manually verify publisher, repo, and audit before installing
-
-### Protection Layers
-| Layer | Mechanism |
-|-------|-----------|
-| 7-day cooldown | Policy enforcement (manual check before install) |
-| npq guard | `npm` aliased to `npq-hero` — checks vulns, typosquatting, registry |
-| Lockfile validation | `package-lock=true`, `save-exact=true` |
-| Secrets monitoring | Simulation G34 Sentinel |
-
-See [NPM-SUPPLY-CHAIN-POLICY.md](NPM-SUPPLY-CHAIN-POLICY.md) for full policy.
-
 ## Credits
 
 - **PCEF (Perkins Cybersecurity Educational Fund):** NLx402 facilitator, Traceix patterns, YARA inspiration
