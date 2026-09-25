@@ -92,6 +92,13 @@ All cryptographic operations use audited, well-maintained libraries:
 - `tweetnacl` — NaCl box encryption, Ed25519 signatures
 - `ethers` — EVM signature recovery (secp256k1)
 - `snarkjs` — Groth16 ZK proof generation and verification
+- Web Crypto API — SHA-256 hashing, HMAC signing (Edge Runtime compatible)
+
+## NPM Supply Chain Security
+
+- 7-day cooling period for all npm package installs
+- npq-hero guard intercepts installs for vulnerability/typosquatting checks
+- See [NPM-SUPPLY-CHAIN-POLICY.md](../NPM-SUPPLY-CHAIN-POLICY.md) for full policy
 
 ## Security Headers
 

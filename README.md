@@ -3,7 +3,7 @@
 **Bitcoin Intelligence API for AI Agents**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
+[![Version](https://img.shields.io/badge/version-4.4.0-blue.svg)](https://github.com/aiindigo925/btcfi-api)
 
 Live at [btcfi.aiindigo.com](https://btcfi.aiindigo.com) · Built by [AI Indigo](https://aiindigo.com) · [GitHub](https://github.com/aiindigo925/btcfi-api)
 
@@ -262,6 +262,7 @@ BTCFi API uses **x402 micropayments** — no API keys, no OAuth, no subscription
 - Nonce replay protection
 - PEAC Protocol cryptographic receipts
 - Tiered rate limiting (free: 100/min, signed: 500/min, paid: unlimited)
+- NPM supply chain policy: 7-day cooling period, npq guard, lockfile validation
 
 Report vulnerabilities: **security@aiindigo.com**
 
@@ -291,6 +292,7 @@ Required environment variables:
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and endpoint reference |
 | [docs/SECURITY.md](docs/SECURITY.md) | Security model and features |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history |
+| [NPM-SUPPLY-CHAIN-POLICY.md](NPM-SUPPLY-CHAIN-POLICY.md) | Supply chain security policy |
 
 ## Packages & Distribution
 

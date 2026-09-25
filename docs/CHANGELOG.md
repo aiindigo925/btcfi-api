@@ -1,5 +1,35 @@
 # BTCFi API — Changelog
 
+## v4.4.0 (2026-09-25)
+
+### MarkdownV2 Escaping Overhaul (Telegram Bot)
+- Global `replySafe(ctx, text, opts, cmdName)` wrapper on all 131 bot reply calls
+- Automatic MarkdownV2→plain-text fallback: if Telegram rejects formatted text, retries without parse_mode
+- `stripMdV2()` 3-step cleaner: strip unescaped `*_~` → unescape reserved chars → strip backticks
+- `esc()` covers all 18 MarkdownV2-reserved characters
+- Fixed 9 static templates with unescaped reserved chars (`-`, `=`, `>`, `|`, `!`, `(`, `)`, `.`)
+- Escaped `c.score.toFixed(2)` in /signal with `esc()` (dynamic values contain `.`, `-`)
+- Added `cmdName` parameter to all 35 MarkdownV2 reply calls (logs which command failed)
+- Fixed 8 literal `\\n` strings in /portfolio help and /premium (now proper `\n`)
+- Switched /alerts list from `PLAIN_FOOTER` to `FOOTER` (MarkdownV2-compatible)
+- Fixed pre-existing 4-backslash templates (`\\\\` → `\\` in TS source)
+- Process error handlers on webhook server (uncaughtException, unhandledRejection)
+- PORT env override for webhook server
+
+### Build Warnings Eliminated
+- Upgraded Next.js 15.5.11 → 15.5.12 (aligned @next/swc-darwin-arm64)
+- Replaced Node.js `crypto` module with Web Crypto API in `api-keys.ts` and `peac.ts` (Edge Runtime compatible)
+- Switched `@upstash/redis` → `@upstash/redis/cloudflare` build (no `process.version` usage)
+- `generatePEACReceipt()`, `generateApiKey()`, `hashKey()` now async (use `crypto.subtle`)
+- Build compiles with zero user-facing warnings
+
+### NPM Supply Chain Policy
+- Added `NPM-SUPPLY-CHAIN-POLICY.md` — 7-day cooling period for all npm installs
+- npq (npm package quality) guard active: `npm` aliased to `npq-hero`
+- Lockfile validation: `package-lock=true`, `save-exact=true`
+
+---
+
 ## v4.3.0 (2026-06-17)
 
 ### Telegram Bot — Local Webhook Server

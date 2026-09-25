@@ -64,13 +64,16 @@
 - Chrome extension scaffold (Manifest V3)
 - Telegram bot expanded to 15 commands
 
-### MP6 — Telegram Bot Overhaul & Local Webhook (Jun 2026)
+### MP6 — Telegram Bot Overhaul & Local Webhook (Jun–Sep 2026)
 - Migrated bot from Vercel to local webhook server (eliminated self-referencing API calls)
 - PM2 process with Cloudflare Tunnel for webhook delivery
 - Bot now completely free for all users — removed pro/free tier distinction
-- Expanded from 15 to 30+ commands (Runes, Ordinals, Lightning, Taproot, Portfolio, Cluster, Graph, Staking, Entity, Signal, L2, Block, MVRV, SOPR, NUPL, Fear, Hash, Halving, ETF, Funding, Dominance, Mining, Threat, Batch, Webhooks, Digest, Alerts, Watch/Unwatch/Watchlist)
+- Expanded from 15 to 38 commands (Runes, Ordinals, Lightning, Taproot, Portfolio, Cluster, Graph, Staking, Entity, Signal, L2, Block, MVRV, SOPR, NUPL, Fear, Hash, Halving, ETF, Funding, Dominance, Mining, Threat, Batch, Webhooks, Digest, Alerts, Watch/Unwatch/Watchlist)
 - Fixed MarkdownV2 esc() regex bug (character class closing prematurely)
 - Fixed ESM import hoisting and dotenv .env.local loading
+- **MarkdownV2 escaping overhaul (Sep 2026):** replySafe with plain-text fallback, stripMdV2, esc() on 18 reserved chars, cmdName logging on all 35 MarkdownV2 calls, 9 static templates fixed, 4-backslash fix
+- **Build warnings eliminated (Sep 2026):** Next.js 15.5.12 alignment, Web Crypto API for Edge Runtime, @upstash/redis/cloudflare
+- **NPM supply chain policy:** 7-day cooling period, npq-hero guard, lockfile validation
 
 ---
 
@@ -84,7 +87,7 @@
 | YARA Patterns | 8 |
 | ZK Proof Types | 4 |
 | Payment Networks | 2 (Base + Solana) |
-| Telegram Bot Commands | 30+ (live, free for all) |
+| Telegram Bot Commands | 38 (live, free for all) |
 | Whale Alert Channel | @BTCFi_Whales (live, free) |
 | Free Tools | /safe, @BTC_Fi_Bot, @BTCFi_Whales, Dashboard |
 | Total Tasks Completed | 200+ |

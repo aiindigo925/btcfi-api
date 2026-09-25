@@ -96,9 +96,9 @@ All API responses include:
 - All Bitcoin data is proxied from mempool.space in real-time
 - No queries are logged or stored
 - No personal information is collected
-- Rate limit counters use Vercel KV (persistent) with in-memory fallback
+- Rate limit counters use Upstash Redis (persistent) with in-memory fallback
 - Nonce store is in-memory (5-minute TTL, reset on cold start)
-- Revenue counters use Vercel KV (persistent) with in-memory fallback
+- Revenue counters use Upstash Redis (persistent) with in-memory fallback
 
 ---
 
@@ -124,6 +124,23 @@ All API responses include:
 | ZK proofs (live) | Simulated Groth16 zk-SNARKs | Web Crypto SHA-256 (circom circuits planned) |
 
 ---
+
+## NPM Supply Chain Security
+
+### 7-Day Cooling Period
+- **NEVER install npm packages released within 7 days** — applies to new deps, updates, and security patches
+- Verified via `npm view <pkg>@<ver> time` before every install
+- Emergency bypass: manually verify publisher, repo, and audit before installing
+
+### Protection Layers
+| Layer | Mechanism |
+|-------|-----------|
+| 7-day cooldown | Policy enforcement (manual check before install) |
+| npq guard | `npm` aliased to `npq-hero` — checks vulns, typosquatting, registry |
+| Lockfile validation | `package-lock=true`, `save-exact=true` |
+| Secrets monitoring | Simulation G34 Sentinel |
+
+See [NPM-SUPPLY-CHAIN-POLICY.md](NPM-SUPPLY-CHAIN-POLICY.md) for full policy.
 
 ## Credits
 
