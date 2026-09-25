@@ -410,10 +410,9 @@ function registerCommands(b: Bot): void {
     + '/watchlist \u2014 Your watched addresses\n'
     + '/alerts \u2014 Advanced alerts\n'
     + '/digest \u2014 Daily BTC digest\n'
-    + '/help \u2014 This message'
-    + '/help \u2014 This message'
+    + '/help \u2014 This message\n'
     + FOOTER,
-    { parse_mode: 'MarkdownV2' }
+    { parse_mode: 'MarkdownV2' }, 'start'
   ));
 
   b.command('help', (ctx) => replySafe(ctx, 
@@ -435,13 +434,13 @@ function registerCommands(b: Bot): void {
     + '/signal \u2014 Composite cycle signal\n'
     + '/l2 \u2014 Bitcoin L2 ecosystem\n'
     + '/entity \u2014 Entity cluster lookup\n\n'
-    + '*On-Chain Metrics*\n'
-    + '/mvrv \u2014 MVRV Z-Score\n'
+    + '*On\\-Chain Metrics*\n'
+    + '/mvrv \u2014 MVRV Z\\-Score\n'
     + '/sopr \u2014 SOPR metric\n'
     + '/nupl \u2014 Net Unrealized P/L\n\n'
-    + '*Multi-Chain*\n'
-    + '/eth_addr \u2014 ETH address lookup\n'
-    + '/sol_addr \u2014 SOL address lookup\n'
+    + '*Multi\\-Chain*\n'
+    + '/eth\\_addr \u2014 ETH address lookup\n'
+    + '/sol\\_addr \u2014 SOL address lookup\n'
     + '/staking \u2014 Staking status\n\n'
     + '*Watchlist*\n'
     + '/watch \u2014 Watch address\n'
@@ -450,10 +449,10 @@ function registerCommands(b: Bot): void {
     + '/alerts \u2014 Advanced alerts \\(whale/price/fee\\)\n\n'
     
     
-    + '/portfolio \u2014 Multi-address portfolio\n'
+    + '/portfolio \u2014 Multi\\-address portfolio\n'
     + '/digest \u2014 Daily BTC digest \\(Pro\\)'
     + FOOTER,
-    { parse_mode: 'MarkdownV2' }
+    { parse_mode: 'MarkdownV2' }, 'help'
   ));
 
   // ---- PRICE & FEES ----
@@ -514,7 +513,7 @@ function registerCommands(b: Bot): void {
         + '\u23f1 Medium: ' + esc(r.halfHourFee || '\u2014') + ' sat/vB' + med + '\n'
         + '\ud83d\udc0c Slow: ' + esc(r.hourFee || '\u2014') + ' sat/vB' + slow + '\n'
         + '\ud83d\udccf Economy: ' + esc(r.economyFee || '\u2014') + ' sat/vB' + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'fees'
       );
     } catch (err) {
       console.error('[Telegram] /fees failed:', err);
@@ -536,7 +535,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcca Transactions: ' + esc((m.count || 0).toLocaleString()) + '\n'
         + '\ud83d\udcbe Size: ' + esc(m.vsizeMB || '\u2014') + ' MB\n'
         + '\ud83d\udcb0 Total fees: ' + esc(m.totalFeeBTC || '\u2014') + ' BTC' + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'mempool'
       );
     } catch (err) {
       console.error('[Telegram] /mempool failed:', err);
@@ -562,7 +561,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb0 Balance: ' + esc(bal.btc || '0') + ' BTC \\(\\$' + esc(bal.usd || '0') + '\\)\n'
         + '\ud83d\udcca Transactions: ' + (s.txCount || 0) + '\n'
         + '\ud83d\udce5 Funded: ' + (s.fundedTxos || 0) + ' \u00b7 \ud83d\udce4 Spent: ' + (s.spentTxos || 0) + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'address'
       );
     } catch (err) {
       console.error('[Telegram] /address failed:', err);
@@ -618,7 +617,7 @@ function registerCommands(b: Bot): void {
       await replySafe(ctx, 
         '\ud83d\udce6 *Latest Blocks*\n\n'
         + lines.join('\n') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'block'
       );
     } catch (err) {
       console.error('[Telegram] /block failed:', err);
@@ -681,7 +680,7 @@ function registerCommands(b: Bot): void {
         + 'Score: ' + score + '/100 \\(Grade ' + esc(grade) + '\\)\n'
         + bar + '\n\n'
         + esc(d.summary || '') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'risk'
       );
     } catch (err) {
       console.error('[Telegram] /risk failed:', err);
@@ -708,7 +707,7 @@ function registerCommands(b: Bot): void {
         + '\u23f1 Avg interval: ' + esc(bp.avgIntervalSec || '\u2014') + 's\n'
         + '\ud83d\ude80 Fast fee: ' + esc(fm.fastestFee || '\u2014') + ' sat/vB\n'
         + '\ud83d\udcb5 BTC: \\$' + price + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'network'
       );
     } catch (err) {
       console.error('[Telegram] /network failed:', err);
@@ -737,7 +736,7 @@ function registerCommands(b: Bot): void {
         + '\u23f1 Avg block: ' + esc(bs.avgBlockTime || '\u2014') + '\n\n'
         + '*Top Pools:*\n'
         + (pools.length ? pools.join('\n') : '\u2014') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'mining'
       );
     } catch (err) {
       console.error('[Telegram] /mining failed:', err);
@@ -762,7 +761,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcaa Avg channel: ' + esc((d.avgChannelSize || 0).toLocaleString()) + ' sats\n\n'
         + '*Top Nodes:*\n'
         + (topNodes.length ? topNodes.join('\n') : '\u2014') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'lightning'
       );
     } catch (err) {
       console.error('[Telegram] /lightning failed:', err);
@@ -784,7 +783,7 @@ function registerCommands(b: Bot): void {
       const sigLabel = sig.replace(/_/g, ' ').toUpperCase();
       const bar = '\u2588'.repeat(Math.round(Math.abs(score) * 10)) + '\u2591'.repeat(10 - Math.round(Math.abs(score) * 10));
       const components = (d.components || []).map((c: any) =>
-        '  ' + (c.score > 0.2 ? '\ud83d\udfe2' : c.score < -0.2 ? '\ud83d\udd34' : '\ud83d\udfe0') + ' ' + esc(c.name) + ': ' + c.score.toFixed(2)
+        '  ' + (c.score > 0.2 ? '\ud83d\udfe2' : c.score < -0.2 ? '\ud83d\udd34' : '\ud83d\udfe0') + ' ' + esc(c.name) + ': ' + esc(c.score.toFixed(2))
       );
       await replySafe(ctx, 
         sigEmoji + ' *Cycle Signal: ' + sigLabel + '*\n\n'
@@ -793,7 +792,7 @@ function registerCommands(b: Bot): void {
         + '*Components:*\n'
         + (components.length ? components.join('\n') : '\u2014') + '\n\n'
         + '_' + esc(d.reasoning || '') + '_' + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'signal'
       );
     } catch (err) {
       console.error('[Telegram] /signal failed:', err);
@@ -817,7 +816,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb0 Total TVL: $' + esc(((d.totalTVL || 0) / 1e6).toFixed(1)) + 'M\n\n'
         + '*Chains:*\n'
         + (chains.length ? chains.join('\n') : '\u2014') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'l2'
       );
     } catch (err) {
       console.error('[Telegram] /l2 failed:', err);
@@ -845,7 +844,7 @@ function registerCommands(b: Bot): void {
         + (tags ? 'Tags: ' + esc(tags) + '\n' : '')
         + '\ud83d\udcb0 Balance: ' + esc(d.balance?.btc || '0') + ' BTC\n'
         + '\ud83d\udcca Transactions: ' + (d.txCount || 0) + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'entity'
       );
     } catch (err) {
       console.error('[Telegram] /entity failed:', err);
@@ -868,15 +867,15 @@ function registerCommands(b: Bot): void {
       const count = await portfolioCount(userId);
       return replySafe(ctx, 
         '\ud83d\udcca *Portfolio Management*\n\n'
-        + '\ud83d\udccc ' + count + '/' + max + ' addresses\\n\\n'
+        + '\ud83d\udccc ' + count + '/' + max + ' addresses\n\n'
         + '*Commands:*\n'
-        + '/portfolio add <address> <label> \u2014 Add address\n'
+        + '/portfolio add <address\\> <label\\> \u2014 Add address\n'
         + '/portfolio list \u2014 Show saved addresses\n'
-        + '/portfolio remove <address> \u2014 Remove address\n'
+        + '/portfolio remove <address\\> \u2014 Remove address\n'
         + '/portfolio summary \u2014 Aggregate stats\n\n'
-        + '_Or pass a BTC address directly for single-address analysis_'
+        + '_Or pass a BTC address directly for single\\-address analysis_'
         + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'portfolio'
       );
     }
 
@@ -904,7 +903,7 @@ function registerCommands(b: Bot): void {
       return replySafe(ctx, 
         '\ud83d\udcca *Your Portfolio* \\( ' + items.length + '/' + max + ' \\\)\n\n'
         + lines.join('\n') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'portfolio'
       );
     }
 
@@ -956,7 +955,7 @@ function registerCommands(b: Bot): void {
           + '\ud83d\udcce *Addresses:* ' + items.length + '\n\n'
           + '*Allocation:*\n'
           + lines.join('\n') + FOOTER,
-          { parse_mode: 'MarkdownV2' }
+          { parse_mode: 'MarkdownV2' }, 'portfolio'
         );
       } catch (err) {
         console.error('[Telegram] /portfolio summary failed:', err);
@@ -980,7 +979,7 @@ function registerCommands(b: Bot): void {
           + '\ud83d\udcc4 BTC: ' + esc(d.totalBtc || '0') + '\n\n'
           + '*Assets:*\n'
           + (assets.length ? assets.join('\n') : '\u2014') + FOOTER,
-          { parse_mode: 'MarkdownV2' }
+          { parse_mode: 'MarkdownV2' }, 'portfolio'
         );
       } catch (err) {
         console.error('[Telegram] /portfolio failed:', err);
@@ -1004,11 +1003,11 @@ function registerCommands(b: Bot): void {
       const mvrv = d.mvrv ?? '\u2014';
       const zone = d.zone || '\u2014';
       await replySafe(ctx, 
-        '\ud83d\udcc8 *MVRV Z-Score*\n\n'
-        + 'Z-Score: ' + esc(String(zscore)) + '\n'
+        '\ud83d\udcc8 *MVRV Z\\-Score*\n\n'
+        + 'Z\\-Score: ' + esc(String(zscore)) + '\n'
         + 'MVRV Ratio: ' + esc(String(mvrv)) + '\n'
         + 'Zone: ' + esc(zone) + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'mvrv'
       );
     } catch (err) {
       console.error('[Telegram] /mvrv failed:', err);
@@ -1030,9 +1029,9 @@ function registerCommands(b: Bot): void {
         emoji + ' *SOPR*\n\n'
         + 'Value: ' + esc(String(sopr)) + '\n'
         + 'Window: ' + esc(window) + '\n\n'
-        + '< 1 = loss selling \\(buy signal\\)\n'
-        + '> 1\\.15 = profit taking \\(sell signal\\)' + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        + '< 1 \\= loss selling \\(buy signal\\)\n'
+        + '\\> 1\\.15 \\= profit taking \\(sell signal\\)' + FOOTER,
+        { parse_mode: 'MarkdownV2' }, 'sopr'
       );
     } catch (err) {
       console.error('[Telegram] /sopr failed:', err);
@@ -1054,9 +1053,9 @@ function registerCommands(b: Bot): void {
         emoji + ' *Net Unrealized P/L*\n\n'
         + 'NUPL: ' + esc(String(nupl)) + '\n'
         + 'Zone: ' + esc(zone) + '\n\n'
-        + '< 0\\.25 = capitulation \\(buy\\)\n'
-        + '> 0\\.75 = euphoria \\(sell\\)' + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        + '< 0\\.25 \\= capitulation \\(buy\\)\n'
+        + '\\> 0\\.75 \\= euphoria \\(sell\\)' + FOOTER,
+        { parse_mode: 'MarkdownV2' }, 'nupl'
       );
     } catch (err) {
       console.error('[Telegram] /nupl failed:', err);
@@ -1083,7 +1082,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb0 Balance: ' + esc(d.balance || d.eth || '0') + ' ETH\n'
         + '\ud83d\udcb5 USD: \\$' + esc(d.usd || '0') + '\n'
         + '\ud83d\udcca Transactions: ' + (d.txCount || d.nonce || 0) + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'eth_addr'
       );
     } catch (err) {
       console.error('[Telegram] /eth_addr failed:', err);
@@ -1108,7 +1107,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\udcb0 SOL: ' + esc(d.sol || d.balance || '0') + '\n'
         + '\ud83d\udcb5 USD: \\$' + esc(d.usd || '0') + '\n'
         + '\ud83d\udcca Transactions: ' + (d.txCount || 0) + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'sol_addr'
       );
     } catch (err) {
       console.error('[Telegram] /sol_addr failed:', err);
@@ -1129,7 +1128,7 @@ function registerCommands(b: Bot): void {
         + (d.apy ? 'APY: ' + esc(String(d.apy)) + '%\n' : '')
         + (d.tvl ? 'TVL: $' + esc(d.tvl) + '\n' : '')
         + (d.detail ? '\n' + esc(d.detail) : '') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'staking'
       );
     } catch (err) {
       console.error('[Telegram] /staking failed:', err);
@@ -1156,7 +1155,7 @@ function registerCommands(b: Bot): void {
         + 'Level: ' + esc(String(level).toUpperCase()) + '\n'
         + (d.indicators ? 'Indicators: ' + esc(d.indicators) + '\n' : '')
         + (d.recommendation ? '\n' + esc(d.recommendation) : '') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'threat'
       );
     } catch (err) {
       console.error('[Telegram] /threat failed:', err);
@@ -1180,7 +1179,7 @@ function registerCommands(b: Bot): void {
         + '\ud83d\ude80 Max Fee: ' + esc(d.maxFeePerGas?.gwei || '\u2014') + ' gwei\n'
         + '\u2699\ufe0f Priority: ' + esc(d.maxPriorityFeePerGas?.gwei || '\u2014') + ' gwei\n'
         + '\ud83d\udce6 Block: ' + (d.blockNumber || '\u2014') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'eth_gas'
       );
     } catch (err) {
       console.error('[Telegram] /eth_gas failed:', err);
@@ -1203,7 +1202,7 @@ function registerCommands(b: Bot): void {
         + '\ud83c\udfaf Base Fee: ' + esc(d.baseFee || '\u2014') + '\n'
         + '\ud83d\ude80 TPS: ' + (d.tps || '\u2014') + '\n'
         + '\ud83d\udce6 Slot: ' + (d.slot || '\u2014') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'sol_fees'
       );
     } catch (err) {
       console.error('[Telegram] /sol_fees failed:', err);
@@ -1220,16 +1219,16 @@ function registerCommands(b: Bot): void {
     const userId = ctx.from?.id || 0;
 
     await replySafe(ctx, 
-      '\u2b50 *BTCFi \u2014 Everything is Free\!*\n\n'
-      + 'All features are available to everyone:\\n\n'
-      + '\u2022 Unlimited commands\\n'
-      + '\u2022 Portfolio tracking \\(50 addresses\\)\\n'
-      + '\u2022 Daily BTC digest\\n'
-      + '\u2022 20 advanced alerts\\n'
-      + '\u2022 Whale channel alerts\\n\n'
-      + '_Direct API access (developers/AI agents) is paid via micropayments._'
+      '\u2b50 *BTCFi \u2014 Everything is Free\\!*\n\n'
+      + 'All features are available to everyone:\n\n'
+      + '\u2022 Unlimited commands\n'
+      + '\u2022 Portfolio tracking \\(50 addresses\\)\n'
+      + '\u2022 Daily BTC digest\n'
+      + '\u2022 20 advanced alerts\n'
+      + '\u2022 Whale channel alerts\n\n'
+      + '_Direct API access \\(developers/AI agents\) is paid via micropayments\\._'
       + FOOTER,
-      { parse_mode: 'MarkdownV2' }
+      { parse_mode: 'MarkdownV2' }, 'premium'
     );
   });
 
@@ -1281,7 +1280,7 @@ function registerCommands(b: Bot): void {
         + 'Scheduled digest: ' + (enabled ? '\u2705 ON' : '\u274c OFF') + '\n'
         + '_Use /digest enable to schedule daily at 9am UTC_'
         + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'digest'
       );
     } catch (err) {
       console.error('[Telegram] /digest failed:', err);
@@ -1344,7 +1343,7 @@ function registerCommands(b: Bot): void {
         + lines.join('\n') + '\n\n'
         + 'Alerts: ' + (alertsOn ? '\u2705 ON' : '\u274c OFF')
         + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'watchlist'
       );
     } catch (err) {
       console.error('[Telegram] /watchlist failed:', err);
@@ -1382,11 +1381,11 @@ function registerCommands(b: Bot): void {
         return replySafe(ctx, 
           '\ud83d\udce1 *No active alerts*\n\n'
           + 'Create alerts with:\n'
-          + '/alerts whale <min\\_btc>\n'
-          + '/alerts price <above|below> <price>\n'
-          + '/alerts fee <above> <sat\\_vb>'
-          + PLAIN_FOOTER,
-          { parse_mode: 'MarkdownV2' }
+          + '/alerts whale <min\\_btc\\>\n'
+          + '/alerts price <above\\|below\\> <price\\>\n'
+          + '/alerts fee <above\\> <sat\\_vb\\>'
+          + FOOTER,
+          { parse_mode: 'MarkdownV2' }, 'alerts'
         );
       }
       const lines = alerts.map((a) => {
@@ -1401,7 +1400,7 @@ function registerCommands(b: Bot): void {
       return replySafe(ctx, 
         '\ud83d\udce1 *Your Alerts* \\( ' + alerts.length + '/' + max + ' \\\)\n\n'
         + lines.join('\n') + FOOTER,
-        { parse_mode: 'MarkdownV2' }
+        { parse_mode: 'MarkdownV2' }, 'alerts'
       );
     }
 
@@ -1455,17 +1454,17 @@ function registerCommands(b: Bot): void {
       '\ud83d\udce1 *Advanced Alerts*\n\n'
       + 'Active: ' + alerts.length + '/' + max + '\n\n'
       + '*Create:*\n'
-      + '/alerts whale <min\\_btc> \u2014 Whale tx threshold\n'
-      + '/alerts price <above|below> <usd> \u2014 Price crossing\n'
-      + '/alerts fee <above> <sat\\_vb> \u2014 Fee spike\n\n'
+      + '/alerts whale <min\\_btc\\> \u2014 Whale tx threshold\n'
+      + '/alerts price <above\\|below\\> <usd\\> \u2014 Price crossing\n'
+      + '/alerts fee <above\\> <sat\\_vb\\> \u2014 Fee spike\n\n'
       + '*Manage:*\n'
       + '/alerts list \u2014 Show active alerts\n'
-      + '/alerts remove <id> \u2014 Remove alert\n\n'
+      + '/alerts remove <id\\> \u2014 Remove alert\n\n'
       + '*Legacy:*\n'
       + '/alerts on \u2014 Enable watch alerts\n'
       + '/alerts off \u2014 Disable watch alerts'
       + FOOTER,
-      { parse_mode: 'MarkdownV2' }
+      { parse_mode: 'MarkdownV2' }, 'alerts'
     );
   });
 
