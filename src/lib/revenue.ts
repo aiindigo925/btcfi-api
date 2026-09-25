@@ -23,8 +23,11 @@ async function getKV(): Promise<any> {
   if (kvAvailable === false) return null;
   if (kvModule) return kvModule;
   try {
-    const { Redis } = await import('@upstash/redis' as string);
-    kvModule = Redis.fromEnv();
+    const { Redis } = await import('@upstash/redis/cloudflare' as string);
+    kvModule = Redis.fromEnv({
+      UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL!,
+      UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
     kvAvailable = true;
     return kvModule;
   } catch {

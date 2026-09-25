@@ -349,7 +349,7 @@ export async function middleware(request: NextRequest) {
     try {
       const price = getPriceForPath(pathname);
       const amount = Math.floor(price * 1_000_000).toString();
-      const receipt = generatePEACReceipt(pathname, amount, network, '');
+      const receipt = await generatePEACReceipt(pathname, amount, network, '');
       response.headers.set('X-PEAC-Receipt', receipt);
     } catch (e) { console.error('[PEAC] Receipt error:', e); }
   }

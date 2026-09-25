@@ -3,13 +3,16 @@
  * Used by: whale cron (dedup), watchlist (Phase 2), revenue tracking
  */
 
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/cloudflare';
 
 let _redis: Redis | null = null;
 
 export function getRedis(): Redis {
   if (!_redis) {
-    _redis = Redis.fromEnv();
+    _redis = Redis.fromEnv({
+      UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL!,
+      UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
   }
   return _redis;
 }

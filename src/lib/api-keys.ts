@@ -13,7 +13,19 @@
  */
 
 import { getRedis } from '@/lib/redis';
-import crypto from 'crypto';
+
+/** Web Crypto API helpers (Edge Runtime compatible) */
+function getRandomHex(bytes: number): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // ============ TYPES ============
 
@@ -72,18 +84,18 @@ export const TIER_CONFIGS: Record<ApiKeyTier, TierConfig> = {
  * Generate a random API key with prefix 'btcfi_'.
  * The key is 32 hex chars (128 bits of entropy) + prefix.
  */
-export function generateApiKey(): { key: string; keyHash: string } {
-  const randomHex = crypto.randomBytes(16).toString('hex');
+export async function generateApiKey(): Promise<{ key: string; keyHash: string }> {
+  const randomHex = getRandomHex(16);
   const key = `btcfi_${randomHex}`;
-  const keyHash = hashKey(key);
+  const keyHash = await hashKey(key);
   return { key, keyHash };
 }
 
 /**
  * Hash an API key for storage. Uses SHA-256 to avoid storing raw keys.
  */
-export function hashKey(key: string): string {
-  return crypto.createHash('sha256').update(key).digest('hex');
+export async function hashKey(key: string): Promise<string> {
+  return await sha256Hex(key);
 }
 
 // ============ KEY CRUD ============
@@ -140,7 +152,7 @@ export async function validateApiKey(
   }
 
   const redis = getRedis();
-  const keyHash = hashKey(key);
+  const keyHash = await hashKey(key);
 
   // Check if revoked
   const isRevoked = await redis.sismember('apikey:revoked', keyHash);

@@ -8,13 +8,30 @@
  * Signing: HMAC-SHA256 (upgradeable to Ed25519 when keypair is configured)
  */
 
-import { createHmac, createHash } from 'crypto';
-
 const PEAC_SECRET = process.env.PEAC_SIGNING_KEY;
 if (!PEAC_SECRET) {
   console.error('[PEAC] FATAL: PEAC_SIGNING_KEY not set. Receipt generation DISABLED.');
 }
 const PEAC_VERSION = '0.9.15';
+
+/** Web Crypto API helper: HMAC-SHA256 (Edge Runtime compatible) */
+async function hmacSha256Base64url(key: string, data: string): Promise<string> {
+  const keyData = new TextEncoder().encode(key);
+  const msgData = new TextEncoder().encode(data);
+  const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Web Crypto API helper: SHA-256 hex (Edge Runtime compatible) */
+async function sha256Hex(data: string): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function base64url(data: string): string {
+  return btoa(data).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export interface PEACReceiptPayload {
   /** PEAC protocol version */
@@ -35,23 +52,19 @@ export interface PEACReceiptPayload {
   iss: string;
 }
 
-function base64url(data: string): string {
-  return Buffer.from(data).toString('base64url');
-}
-
-function sha256short(data: string): string {
-  return createHash('sha256').update(data).digest('hex').slice(0, 16);
+async function sha256short(data: string): Promise<string> {
+  return (await sha256Hex(data)).slice(0, 16);
 }
 
 /**
  * Generate a PEAC receipt for a successful payment.
  */
-export function generatePEACReceipt(
+export async function generatePEACReceipt(
   resource: string,
   amount: string,
   network: string,
   responseBody: string
-): string {
+): Promise<string> {
   if (!PEAC_SECRET) {
     return '';
   }
@@ -62,15 +75,13 @@ export function generatePEACReceipt(
     amt: amount,
     cur: 'USDC',
     rail: network,
-    rh: sha256short(responseBody),
+    rh: await sha256short(responseBody),
     iss: 'btcfi.aiindigo.com',
   };
 
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'PEAC' }));
   const body = base64url(JSON.stringify(payload));
-  const signature = createHmac('sha256', PEAC_SECRET!)
-    .update(`${header}.${body}`)
-    .digest('base64url');
+  const signature = await hmacSha256Base64url(PEAC_SECRET!, `${header}.${body}`);
 
   return `${header}.${body}.${signature}`;
 }

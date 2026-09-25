@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate key
-    const { key, keyHash } = generateApiKey();
+    const { key, keyHash } = await generateApiKey();
 
     // Store in Redis
     const keyInfo = await createApiKey(key, keyHash, tier, label, expiresDays);
